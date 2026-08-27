@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "E:\Inta Workspace\IN_TA_ACCOUNTING\backend\finance\views.py", line 215, in perform_create
+    link = upload_receipt_to_drive(receipt_file, receipt_file.name, expense.payee_description)
+  File "E:\Inta Workspace\IN_TA_ACCOUNTING\backend\finance\gdrive.py", line 40, in upload_receipt_to_drive
+    service = get_drive_service()
+  File "E:\Inta Workspace\IN_TA_ACCOUNTING\backend\finance\gdrive.py", line 15, in get_drive_service
+    raise Exception("token.json not found! Please run setup_gdrive.py first.")
+Exception: token.json not found! Please run setup_gdrive.py first.
