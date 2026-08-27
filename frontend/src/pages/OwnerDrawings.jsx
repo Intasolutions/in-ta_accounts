@@ -5,6 +5,7 @@ import { Gem, Plus, CheckCircle, XCircle, X } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
+import CustomSelect from '../components/CustomSelect';
 
 const OwnerDrawings = () => {
   const { user } = useContext(AuthContext);
@@ -183,10 +184,12 @@ const OwnerDrawings = () => {
                     {draw.status === 'PENDING' && (user.role === 'OWNER' || user.role === 'ACCOUNTANT') && (
                       approvingId === draw.id ? (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-                          <select value={approvalBank} onChange={e => setApprovalBank(e.target.value)} style={{ padding: '0.25rem', width: '150px' }}>
-                            <option value="">Select Bank...</option>
-                            {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                          </select>
+                          <CustomSelect 
+                            value={approvalBank} 
+                            onChange={setApprovalBank} 
+                            placeholder="Select Bank..."
+                            options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
+                          />
                           <button onClick={() => handleApprove(draw.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={16}/></button>
                           <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={16}/></button>
                         </div>

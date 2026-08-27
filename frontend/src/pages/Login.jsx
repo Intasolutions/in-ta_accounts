@@ -130,7 +130,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     try {
       await login(username, password);
     } catch (err) {
@@ -145,18 +145,16 @@ const Login = () => {
     <>
       <style>{loginStyles}</style>
       <div className="login-container">
-        
+
         {/* Left Panel - Branding (Hidden on Mobile) */}
         <div className="login-left">
           <div className="bg-pattern"></div>
-          
+
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 0 1rem 0' }}>
-              Financial Clarity,<br/>Made Simple.
+            <h1 style={{ fontSize: '3.5rem', fontWeight: 'bold', margin: '0 0 1rem 0' }}>
+              Financial Clarity,<br />Made Simple..
             </h1>
-            <p style={{ fontSize: '1.125rem', opacity: 0.9, maxWidth: '400px' }}>
-              Professional accounting, invoicing, and project management designed for modern businesses.
-            </p>
+
           </div>
 
           <div className="glass-card" style={{ position: 'relative', zIndex: 1 }}>
@@ -173,19 +171,19 @@ const Login = () => {
         {/* Right Panel - Login Form */}
         <div className="login-right">
           <div className="login-form-container">
-            
+
             {/* Logo & Header */}
             <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-              <img 
-                src="/logo-new.jpg" 
-                alt="IN-TA Solutions" 
-                style={{ 
-                  height: '64px', 
-                  width: 'auto', 
+              <img
+                src="/logo-new.jpg"
+                alt="IN-TA Solutions"
+                style={{
+                  height: '64px',
+                  width: 'auto',
                   marginBottom: '1.5rem',
                   borderRadius: '0.5rem',
                   boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                }} 
+                }}
               />
               <h2 style={{ margin: 0, fontSize: '1.875rem', fontWeight: '700', color: '#0f172a' }}>
                 Welcome back
@@ -218,12 +216,12 @@ const Login = () => {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '1.5rem' }}>
                 <label className="login-label">Username</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="login-input"
-                  required 
-                  value={username} 
-                  onChange={e => setUsername(e.target.value)} 
+                  required
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
                   placeholder="Enter your username"
                 />
               </div>
@@ -236,12 +234,12 @@ const Login = () => {
                   </Link>
                 </div>
                 <div style={{ position: 'relative' }}>
-                  <input 
-                    type={showPassword ? "text" : "password"} 
+                  <input
+                    type={showPassword ? "text" : "password"}
                     className="login-input"
-                    required 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
                     style={{ paddingRight: '3rem' }}
                   />
@@ -267,15 +265,15 @@ const Login = () => {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="login-btn"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
-            
+
           </div>
         </div>
       </div>

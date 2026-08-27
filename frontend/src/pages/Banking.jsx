@@ -4,6 +4,7 @@ import { Landmark, Plus, Share2, Wallet, Edit2, Trash2, X, ArrowRightLeft, List 
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
+import CustomSelect from '../components/CustomSelect';
 
 const Banking = () => {
   const [accounts, setAccounts] = useState([]);
@@ -213,17 +214,23 @@ const Banking = () => {
           <div className="premium-form-grid">
             <div className="form-group">
               <label>From Account</label>
-              <select required value={transferData.from_account} onChange={e => setTransferData({...transferData, from_account: e.target.value})} className="sleek-select">
-                <option value="">Select Account...</option>
-                {accounts.map(b => <option key={b.id} value={b.id}>{b.name} ({formatCurrency(b.current_balance)})</option>)}
-              </select>
+              <CustomSelect 
+                required
+                value={transferData.from_account} 
+                onChange={val => setTransferData({...transferData, from_account: val})} 
+                placeholder="Select Account..."
+                options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
+              />
             </div>
             <div className="form-group">
               <label>To Account</label>
-              <select required value={transferData.to_account_id} onChange={e => setTransferData({...transferData, to_account_id: e.target.value})} className="sleek-select">
-                <option value="">Select Account...</option>
-                {accounts.map(b => <option key={b.id} value={b.id}>{b.name} ({formatCurrency(b.current_balance)})</option>)}
-              </select>
+              <CustomSelect 
+                required
+                value={transferData.to_account_id} 
+                onChange={val => setTransferData({...transferData, to_account_id: val})} 
+                placeholder="Select Account..."
+                options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
+              />
             </div>
             <div className="form-group">
               <label>Amount (₹)</label>

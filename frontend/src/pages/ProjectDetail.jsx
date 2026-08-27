@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, CheckCircle, Clock, Edit2, Trash2, X, FileText, Downlo
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
+import CustomSelect from '../components/CustomSelect';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -173,7 +174,7 @@ const ProjectDetail = () => {
   if (!project) return <div style={{ padding: '2rem' }}>Project not found.</div>;
 
   const resetInvoiceForm = () => {
-    setNewInvoice({ amount: '', date: new Date().toISOString().split('T')[0], status: 'PAID', deposit_account: '', description: '' });
+    setNewInvoice({ amount: '', date: new Date().toISOString().split('T')[0], status: 'PAID', deposit_account: '', description: '', payment_type: 'PARTIAL' });
     setShowInvoiceForm(false);
   };
 
@@ -196,6 +197,20 @@ const ProjectDetail = () => {
     } catch (err) {
       console.error(err);
       alert('Failed to log payment');
+    }
+  };
+
+  const handleDownloadPDF = async (invoiceId) => {
+    try {
+      const response = await api.get(`invoices/${invoiceId}/download_pdf/`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('Error downloading PDF', error);
+      alert('Failed to generate PDF. Please try again.');
     }
   };
 
@@ -281,18 +296,40 @@ const ProjectDetail = () => {
               </div>
               <div className="form-group">
                 <label>Status</label>
-                <select required value={newInvoice.status} onChange={e => setNewInvoice({...newInvoice, status: e.target.value})} className="sleek-select">
-                  <option value="PAID">PAID (Money in Bank)</option>
-                  <option value="SENT">SENT (Awaiting Payment)</option>
-                </select>
+                <CustomSelect 
+                  required
+                  value={newInvoice.status} 
+                  onChange={val => setNewInvoice({...newInvoice, status: val})} 
+                  options={[
+                    { value: 'PAID', label: 'PAID (Money in Bank)' },
+                    { value: 'SENT', label: 'SENT (Awaiting Payment)' }
+                  ]}
+                />
+              </div>
+              <div className="form-group">
+                <label>Payment Type</label>
+                <CustomSelect 
+                  required
+                  value={newInvoice.payment_type} 
+                  onChange={val => setNewInvoice({...newInvoice, payment_type: val})} 
+                  options={[
+                    { value: 'ADVANCE', label: 'Advance Payment' },
+                    { value: 'PARTIAL', label: 'Partial Payment' },
+                    { value: 'FULL', label: 'Full Payment' },
+                    { value: 'RENEWAL', label: 'Renewal / AMC' }
+                  ]}
+                />
               </div>
               {newInvoice.status === 'PAID' && (
                 <div className="form-group">
                   <label>Deposit Bank Account</label>
-                  <select required value={newInvoice.deposit_account} onChange={e => setNewInvoice({...newInvoice, deposit_account: e.target.value})} className="sleek-select">
-                    <option value="">Select Account...</option>
-                    {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+                  <CustomSelect 
+                    required
+                    value={newInvoice.deposit_account} 
+                    onChange={val => setNewInvoice({...newInvoice, deposit_account: val})} 
+                    placeholder="Select Account..."
+                    options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
+                  />
                 </div>
               )}
             </div>
@@ -328,11 +365,9 @@ const ProjectDetail = () => {
                   </td>
                   <td data-label="Actions">
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      {inv.pdf_file && (
-                        <a href={inv.pdf_file.startsWith('http') ? inv.pdf_file : `http://localhost:8000${inv.pdf_file}`} target="_blank" rel="noopener noreferrer" title="Download PDF" className="btn" style={{ padding: '0.25rem', color: 'var(--success)', background: 'transparent' }}>
-                          <FileText size={16}/>
-                        </a>
-                      )}
+                      <button onClick={() => handleDownloadPDF(inv.id)} title="Download PDF" className="btn" style={{ padding: '0.25rem', color: 'var(--success)', background: 'transparent', display: 'flex', alignItems: 'center' }}>
+                        <FileText size={16}/>
+                      </button>
                     </div>
                   </td>
                 </tr>

@@ -5,10 +5,13 @@ import { Wallet, Plus, ArrowDownToLine, Receipt, Edit2, Trash2, X, CheckCircle, 
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
+import CustomSelect from '../components/CustomSelect';
 
 const Expenses = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('register'); // 'register' or 'advances'
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editingAdvance, setEditingAdvance] = useState(null);
 
   const [expenses, setExpenses] = useState([]);
   const [advanceRequests, setAdvanceRequests] = useState([]);
@@ -99,13 +102,18 @@ const Expenses = () => {
       }
       formData.append('logged_by', user.id);
 
-      if (newExpense.receipt_file) {
+      if (newExpense.receipt_file && typeof newExpense.receipt_file !== 'string') {
         formData.append('receipt_file', newExpense.receipt_file);
       }
 
-      await api.post('company-expenses/', formData);
+      if (editingExpense) {
+        await api.put(`company-expenses/${editingExpense}/`, formData);
+      } else {
+        await api.post('company-expenses/', formData);
+      }
 
       setShowExpenseForm(false);
+      setEditingExpense(null);
       setNewExpense({
         expense_type: 'DIRECT',
         payee_description: '',
@@ -123,6 +131,21 @@ const Expenses = () => {
     }
   };
 
+  const handleEditExpense = (exp) => {
+    setEditingExpense(exp.id);
+    setNewExpense({
+      expense_type: exp.expense_type,
+      payee_description: exp.payee_description,
+      category: exp.category,
+      project: exp.project || '',
+      amount: exp.amount,
+      date: exp.date,
+      withdrawal_account: exp.withdrawal_account || '',
+      receipt_file: exp.receipt_file // Cannot preload file input, but we keep the URL if needed
+    });
+    setShowExpenseForm(true);
+  };
+
   const handleDeleteExpense = async (id) => {
     if (window.confirm("Delete this expense?")) {
       try {
@@ -138,14 +161,22 @@ const Expenses = () => {
   const handleRequestAdvance = async (e) => {
     e.preventDefault();
     try {
-      await api.post('advance-requests/', {
-        ...newAdvance,
-        requested_by: user.id
-      });
+      if (editingAdvance) {
+        await api.put(`advance-requests/${editingAdvance}/`, {
+          ...newAdvance,
+          requested_by: user.id
+        });
+      } else {
+        await api.post('advance-requests/', {
+          ...newAdvance,
+          requested_by: user.id
+        });
+      }
       setShowAdvanceForm(false);
+      setEditingAdvance(null);
       setNewAdvance({ amount: '', purpose: '' });
       fetchData();
-      alert('Advance request submitted successfully!');
+      alert('Advance request saved successfully!');
     } catch (err) {
       console.error(err);
       alert('Failed to submit request');
@@ -166,6 +197,15 @@ const Expenses = () => {
       console.error(err);
       alert('Failed to approve request');
     }
+  };
+
+  const handleEditAdvance = (req) => {
+    setEditingAdvance(req.id);
+    setNewAdvance({
+      amount: req.amount,
+      purpose: req.purpose
+    });
+    setShowAdvanceForm(true);
   };
 
   const handleRejectAdvance = async (id) => {
@@ -230,9 +270,17 @@ const Expenses = () => {
           <button
             className="btn btn-primary"
             style={{ width: '100%', justifyContent: 'center' }}
-            onClick={() => setShowExpenseForm(!showExpenseForm)}
+            onClick={() => {
+              if (showExpenseForm) {
+                setShowExpenseForm(false);
+                setEditingExpense(null);
+                setNewExpense({ expense_type: 'DIRECT', payee_description: '', category: 'OTHER', project: '', amount: '', date: new Date().toISOString().split('T')[0], withdrawal_account: '', receipt_file: null });
+              } else {
+                setShowExpenseForm(true);
+              }
+            }}
           >
-            {showExpenseForm ? <X size={18} /> : <><Plus size={18} /> Log Expense</>}
+            {showExpenseForm ? <X size={18} /> : <><Plus size={18} /> {editingExpense ? 'Edit Expense' : 'Log Expense'}</>}
           </button>
         </div>
       </div>
@@ -268,19 +316,27 @@ const Expenses = () => {
             </div>
             <div className="action-bar-right">
               <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search expenses..." />
-              <select value={filterProject} onChange={e => setFilterProject(e.target.value)} className="sleek-select">
-                <option value="">All Projects</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="sleek-select">
-                <option value="">All Categories</option>
-                <option value="TRAVEL">Travel</option>
-                <option value="SERVERS">Servers / Hosting</option>
-                <option value="SOFTWARE">Software Licenses</option>
-                <option value="MARKETING">Marketing</option>
-                <option value="OFFICE">Office Supplies</option>
-                <option value="OTHER">Other</option>
-              </select>
+              <CustomSelect 
+                value={filterProject} 
+                onChange={setFilterProject} 
+                options={[
+                  { value: '', label: 'All Projects' },
+                  ...projects.map(p => ({ value: p.id, label: p.name }))
+                ]}
+              />
+              <CustomSelect 
+                value={filterCategory} 
+                onChange={setFilterCategory} 
+                options={[
+                  { value: '', label: 'All Categories' },
+                  { value: 'TRAVEL', label: 'Travel' },
+                  { value: 'SERVERS', label: 'Servers / Hosting' },
+                  { value: 'SOFTWARE', label: 'Software Licenses' },
+                  { value: 'MARKETING', label: 'Marketing' },
+                  { value: 'OFFICE', label: 'Office Supplies' },
+                  { value: 'OTHER', label: 'Other' }
+                ]}
+              />
             </div>
           </div>
 
@@ -293,10 +349,14 @@ const Expenses = () => {
               <div className="premium-form-grid">
                 <div className="form-group">
                   <label>Expense Type</label>
-                  <select value={newExpense.expense_type} onChange={e => setNewExpense({ ...newExpense, expense_type: e.target.value })} className="sleek-select">
-                    <option value="DIRECT">Direct (Paid from Company Bank)</option>
-                    <option value="FROM_WALLET">Indirect (Paid from My Wallet)</option>
-                  </select>
+                  <CustomSelect 
+                    value={newExpense.expense_type} 
+                    onChange={val => setNewExpense({ ...newExpense, expense_type: val })} 
+                    options={[
+                      { value: 'DIRECT', label: 'Direct (Paid from Company Bank)' },
+                      { value: 'FROM_WALLET', label: 'Indirect (Paid from My Wallet)' }
+                    ]}
+                  />
                 </div>
                 <div className="form-group">
                   <label>Payee / Description</label>
@@ -304,21 +364,29 @@ const Expenses = () => {
                 </div>
                 <div className="form-group">
                   <label>Category</label>
-                  <select value={newExpense.category} onChange={e => setNewExpense({ ...newExpense, category: e.target.value })} className="sleek-select">
-                    <option value="TRAVEL">Travel</option>
-                    <option value="SERVERS">Servers / Hosting</option>
-                    <option value="SOFTWARE">Software Licenses</option>
-                    <option value="MARKETING">Marketing</option>
-                    <option value="OFFICE">Office Supplies</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+                  <CustomSelect 
+                    value={newExpense.category} 
+                    onChange={val => setNewExpense({ ...newExpense, category: val })} 
+                    options={[
+                      { value: 'TRAVEL', label: 'Travel' },
+                      { value: 'SERVERS', label: 'Servers / Hosting' },
+                      { value: 'SOFTWARE', label: 'Software Licenses' },
+                      { value: 'MARKETING', label: 'Marketing' },
+                      { value: 'OFFICE', label: 'Office Supplies' },
+                      { value: 'OTHER', label: 'Other' }
+                    ]}
+                  />
                 </div>
                 <div className="form-group">
                   <label>Project (Optional)</label>
-                  <select value={newExpense.project} onChange={e => setNewExpense({ ...newExpense, project: e.target.value })} className="sleek-select">
-                    <option value="">-- None --</option>
-                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+                  <CustomSelect 
+                    value={newExpense.project} 
+                    onChange={val => setNewExpense({ ...newExpense, project: val })} 
+                    options={[
+                      { value: '', label: '-- None --' },
+                      ...projects.map(p => ({ value: p.id, label: p.name }))
+                    ]}
+                  />
                 </div>
                 <div className="form-group">
                   <label>Amount (₹)</label>
@@ -327,10 +395,13 @@ const Expenses = () => {
                 {newExpense.expense_type === 'DIRECT' && (
                   <div className="form-group">
                     <label>Paid From Bank Account</label>
-                    <select required value={newExpense.withdrawal_account} onChange={e => setNewExpense({ ...newExpense, withdrawal_account: e.target.value })} className="sleek-select">
-                      <option value="">Select Account...</option>
-                      {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name} (Balance: {formatCurrency(b.current_balance)})</option>)}
-                    </select>
+                    <CustomSelect 
+                      required
+                      value={newExpense.withdrawal_account} 
+                      onChange={val => setNewExpense({ ...newExpense, withdrawal_account: val })} 
+                      placeholder="Select Account..."
+                      options={bankAccounts.map(b => ({ value: b.id, label: `${b.name} (Balance: ${formatCurrency(b.current_balance)})` }))}
+                    />
                   </div>
                 )}
                 <div className="form-group">
@@ -379,6 +450,7 @@ const Expenses = () => {
                       ) : '-'}
                     </td>
                     <td data-label="Actions">
+                      <button className="btn" onClick={() => handleEditExpense(exp)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }}><Edit2 size={16} /></button>
                       <button className="btn" onClick={() => handleDeleteExpense(exp.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16} /></button>
                     </td>
                   </tr>
@@ -396,8 +468,16 @@ const Expenses = () => {
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h2 className="card-title" style={{ margin: 0 }}>Advance Requests</h2>
-            <button className="btn btn-primary" onClick={() => setShowAdvanceForm(!showAdvanceForm)}>
-              {showAdvanceForm ? <X size={18} /> : <><Plus size={18} /> Request Funds</>}
+            <button className="btn btn-primary" onClick={() => {
+              if (showAdvanceForm) {
+                setShowAdvanceForm(false);
+                setEditingAdvance(null);
+                setNewAdvance({ amount: '', purpose: '' });
+              } else {
+                setShowAdvanceForm(true);
+              }
+            }}>
+              {showAdvanceForm ? <X size={18} /> : <><Plus size={18} /> {editingAdvance ? 'Edit Request' : 'Request Funds'}</>}
             </button>
           </div>
 
@@ -429,7 +509,7 @@ const Expenses = () => {
                 </tr>
               </thead>
               <tbody>
-                {advanceRequests.map(req => (
+                {(user?.role === 'ACCOUNTANT' ? advanceRequests : advanceRequests.filter(r => r.requested_by === user?.id)).map(req => (
                   <tr key={req.id}>
                     <td data-label="Date">{new Date(req.date).toLocaleDateString()}</td>
                     <td className="strong" data-label="Requested By">{req.requested_by_name}</td>
@@ -441,28 +521,33 @@ const Expenses = () => {
                       </span>
                     </td>
                     <td data-label="Source Bank">{req.source_bank_name || '-'}</td>
-                    <td data-label="Actions">
+                    <td data-label="Actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {req.status === 'PENDING' && (
+                        <button className="btn" onClick={() => handleEditAdvance(req)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }}><Edit2 size={16} /></button>
+                      )}
                       {req.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
                         approvingId === req.id ? (
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-                            <select value={approvalBank} onChange={e => setApprovalBank(e.target.value)} style={{ padding: '0.25rem', width: '150px' }}>
-                              <option value="">Select Bank...</option>
-                              {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
-                            <button onClick={() => handleApproveAdvance(req.id)} className="btn btn-success" style={{ padding: '0.25rem' }}><CheckCircle size={16} /></button>
-                            <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem' }}><X size={16} /></button>
+                            <CustomSelect 
+                              value={approvalBank} 
+                              onChange={setApprovalBank} 
+                              placeholder="Select Bank..."
+                              options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
+                            />
+                            <button className="btn btn-primary" onClick={() => handleApproveAdvance(req.id)} style={{ padding: '0.25rem 0.5rem' }}><CheckCircle size={16} /></button>
+                            <button className="btn btn-secondary" onClick={() => { setApprovingId(null); setApprovalBank(''); }} style={{ padding: '0.25rem 0.5rem' }}><X size={16} /></button>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setApprovingId(req.id)} className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
-                            <button onClick={() => handleRejectAdvance(req.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
-                          </div>
+                          <>
+                            <button className="btn btn-primary" onClick={() => setApprovingId(req.id)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}>Approve</button>
+                            <button className="btn btn-danger" onClick={() => handleRejectAdvance(req.id)} style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}>Reject</button>
+                          </>
                         )
                       )}
                     </td>
                   </tr>
                 ))}
-                {advanceRequests.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No advance requests found.</td></tr>}
+                {(user?.role === 'ACCOUNTANT' ? advanceRequests : advanceRequests.filter(r => r.requested_by === user?.id)).length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No advance requests found.</td></tr>}
               </tbody>
             </table>
           </div>

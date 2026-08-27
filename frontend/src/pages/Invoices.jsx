@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { FileText, Plus, Edit2, Trash2, Download, X } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, Download, X, Copy, ExternalLink, Calendar } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
+import CustomSelect from '../components/CustomSelect';
 
 const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
@@ -95,9 +96,25 @@ const Invoices = () => {
   };
 
   const resetForm = () => {
-    setNewInvoice({ project: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'DRAFT', deposit_account: '' });
+    setNewInvoice({ project: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'DRAFT', deposit_account: '', payment_type: 'PARTIAL' });
+    setEditingInvoice(null);
     setEditingInvoice(null);
     setShowForm(false);
+  };
+
+  const handleDownloadPDF = async (invoiceId) => {
+    try {
+      const response = await api.get(`invoices/${invoiceId}/download_pdf/`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+      // Cleanup slightly delayed to allow browser to open it
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('Error downloading PDF', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
   };
 
   const formatCurrency = (val) => {
@@ -143,10 +160,13 @@ const Invoices = () => {
             <div className="premium-form-grid">
               <div className="form-group">
                 <label>Select Project</label>
-                <select required value={newInvoice.project} onChange={e => setNewInvoice({...newInvoice, project: e.target.value})} className="sleek-select">
-                  <option value="">Select Project...</option>
-                  {projects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.client_name})</option>)}
-                </select>
+                <CustomSelect 
+                  required
+                  value={newInvoice.project} 
+                  onChange={val => setNewInvoice({...newInvoice, project: val})} 
+                  placeholder="Select Project..."
+                  options={projects.map(p => ({ value: p.id, label: `${p.name} (${p.client_name})` }))}
+                />
               </div>
               <div className="form-group">
                 <label>Invoice Date</label>
@@ -156,24 +176,45 @@ const Invoices = () => {
                 <label>Amount (Flat ₹)</label>
                 <input type="number" step="0.01" required value={newInvoice.amount} onChange={e => setNewInvoice({...newInvoice, amount: e.target.value})} placeholder="0.00" />
               </div>
+              <div className="form-group">
+                <label>Payment Type</label>
+                <CustomSelect 
+                  required
+                  value={newInvoice.payment_type} 
+                  onChange={val => setNewInvoice({...newInvoice, payment_type: val})} 
+                  options={[
+                    { value: 'ADVANCE', label: 'Advance Payment' },
+                    { value: 'PARTIAL', label: 'Partial Payment' },
+                    { value: 'FULL', label: 'Full Payment' },
+                    { value: 'RENEWAL', label: 'Renewal / AMC' }
+                  ]}
+                />
+              </div>
               {editingInvoice && (
                 <div className="form-group">
                   <label>Status</label>
-                  <select value={newInvoice.status} onChange={e => setNewInvoice({...newInvoice, status: e.target.value})} className="sleek-select">
-                    <option value="DRAFT">DRAFT</option>
-                    <option value="SENT">SENT</option>
-                    <option value="PAID">PAID</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                  </select>
+                  <CustomSelect 
+                    value={newInvoice.status} 
+                    onChange={val => setNewInvoice({...newInvoice, status: val})} 
+                    options={[
+                      { value: 'DRAFT', label: 'DRAFT' },
+                      { value: 'SENT', label: 'SENT' },
+                      { value: 'PAID', label: 'PAID' },
+                      { value: 'CANCELLED', label: 'CANCELLED' }
+                    ]}
+                  />
                 </div>
               )}
               {newInvoice.status === 'PAID' && (
                 <div className="form-group">
                   <label>Deposit To Account</label>
-                  <select required value={newInvoice.deposit_account} onChange={e => setNewInvoice({...newInvoice, deposit_account: e.target.value})} className="sleek-select">
-                    <option value="">Select Account...</option>
-                    {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name} (Balance: {formatCurrency(b.current_balance)})</option>)}
-                  </select>
+                  <CustomSelect 
+                    required
+                    value={newInvoice.deposit_account} 
+                    onChange={val => setNewInvoice({...newInvoice, deposit_account: val})} 
+                    placeholder="Select Account..."
+                    options={bankAccounts.map(b => ({ value: b.id, label: `${b.name} (Balance: ${formatCurrency(b.current_balance)})` }))}
+                  />
                 </div>
               )}
             </div>
@@ -214,11 +255,9 @@ const Invoices = () => {
                   </td>
                   <td data-label="Actions">
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-                      {inv.pdf_file && (
-                        <a href={inv.pdf_file.startsWith('http') ? inv.pdf_file : `http://localhost:8000${inv.pdf_file}`} target="_blank" rel="noopener noreferrer" title="Download PDF" className="btn" style={{ padding: '0.25rem', color: 'var(--success)', background: 'transparent', display: 'flex', alignItems: 'center' }}>
-                          <FileText size={16}/>
-                        </a>
-                      )}
+                      <button onClick={() => handleDownloadPDF(inv.id)} title="Download PDF" className="btn" style={{ padding: '0.25rem', color: 'var(--success)', background: 'transparent', display: 'flex', alignItems: 'center' }}>
+                        <FileText size={16}/>
+                      </button>
                       <button className="btn" onClick={() => handleEditInvoice(inv)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }}><Edit2 size={16}/></button>
                       <button className="btn" onClick={() => handleDeleteInvoice(inv.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16}/></button>
                     </div>

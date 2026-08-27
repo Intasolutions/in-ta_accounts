@@ -15,48 +15,48 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </div>
         <ul className="nav-links">
           <li>
-            <NavLink to="/" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"} end>
+            <NavLink to="/" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"} end>
               <LayoutDashboard size={20} /> Dashboard
             </NavLink>
           </li>
           <li>
-            <NavLink to="/projects" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <NavLink to="/projects" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
               <Briefcase size={20} /> Projects & Clients
             </NavLink>
           </li>
           <li>
-            <NavLink to="/invoices" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <NavLink to="/invoices" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
               <FileText size={20} /> Invoices
             </NavLink>
           </li>
           <li>
-            <NavLink to="/expenses" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <NavLink to="/expenses" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
               <Receipt size={20} /> Expenses
             </NavLink>
           </li>
           <li>
-            <NavLink to="/banking" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <NavLink to="/banking" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
               <Landmark size={20} /> Banking & Cash
             </NavLink>
           </li>
           <li>
-            <NavLink to="/owner-drawings" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <NavLink to="/owner-drawings" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
               <Gem size={20} /> Owner Drawings
             </NavLink>
           </li>
-          {user?.role === 'ACCOUNTANT' && (
-            <>
-              <li>
-                <NavLink to="/month-end" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-                  <Archive size={20} /> Month-End
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/users" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-                  <Users size={20} /> User Management
-                </NavLink>
-              </li>
-            </>
+          {(user?.role === 'ACCOUNTANT' || user?.role === 'OWNER') && (
+            <li>
+              <NavLink to="/month-end" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+                <Archive size={20} /> Month-End
+              </NavLink>
+            </li>
+          )}
+          {(user?.role === 'SUPER_ADMIN' || user?.role === 'ACCOUNTANT') && (
+            <li>
+              <NavLink to="/users" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+                <Users size={20} /> Team / Users
+              </NavLink>
+            </li>
           )}
         </ul>
       </aside>

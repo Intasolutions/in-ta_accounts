@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
 from decimal import Decimal
 from django.core.mail import send_mail
 from django.db.models import Sum
@@ -114,9 +115,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         invoice = serializer.save()
-        if not invoice.pdf_file:
-            pdf_file = generate_invoice_pdf(invoice)
-            invoice.pdf_file.save(pdf_file.name, pdf_file)
             
         if invoice.status == 'PAID' and invoice.deposit_account:
             invoice.deposit_account.current_balance += invoice.amount
@@ -131,11 +129,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         old_invoice = self.get_object()
         new_invoice = serializer.save()
-        
-        pdf_file = generate_invoice_pdf(new_invoice)
-        if new_invoice.pdf_file:
-            new_invoice.pdf_file.delete(save=False)
-        new_invoice.pdf_file.save(pdf_file.name, pdf_file)
 
         # Reversal Logic
         if old_invoice.status == 'PAID' and old_invoice.deposit_account:
@@ -169,6 +162,16 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 description=f"Reversal of Deleted Invoice {instance.id}"
             )
         instance.delete()
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        invoice = self.get_object()
+        pdf_bytes = generate_invoice_pdf(invoice)
+        
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        filename = f"INV_{invoice.id}_{invoice.date.strftime('%Y%m%d')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
 
 class AdvanceWalletViewSet(viewsets.ModelViewSet):
     queryset = AdvanceWallet.objects.all()
@@ -369,8 +372,6 @@ class RenewalViewSet(viewsets.ModelViewSet):
                 # but let's try to map it to the first bank account if available just for automation flow.
                 deposit_account=BankAccount.objects.first()
             )
-            pdf = generate_invoice_pdf(invoice)
-            invoice.pdf_file.save(pdf.name, pdf)
             
             if invoice.deposit_account:
                 invoice.deposit_account.current_balance += invoice.amount

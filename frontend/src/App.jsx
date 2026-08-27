@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Projects from './pages/Projects';
@@ -11,8 +11,9 @@ import Banking from './pages/Banking';
 import OwnerDrawings from './pages/OwnerDrawings';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
-import UserManagement from './pages/UserManagement';
+import Users from './pages/Users';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import SplashScreen from './components/SplashScreen';
 import './index.css';
 
 const MainApp = () => {
@@ -39,7 +40,7 @@ const MainApp = () => {
             <Route path="/banking" element={<Banking />} />
             <Route path="/owner-drawings" element={<OwnerDrawings />} />
             <Route path="/month-end" element={<MonthEnd />} />
-            <Route path="/users" element={user.role === 'ACCOUNTANT' ? <UserManagement /> : <Navigate to="/" />} />
+            <Route path="/users" element={<Users />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Layout>
@@ -49,9 +50,15 @@ const MainApp = () => {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <AuthProvider>
-      <MainApp />
+      {showSplash ? (
+        <SplashScreen onComplete={() => setShowSplash(false)} />
+      ) : (
+        <MainApp />
+      )}
     </AuthProvider>
   );
 }

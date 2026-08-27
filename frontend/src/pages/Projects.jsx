@@ -5,6 +5,7 @@ import { Plus, Building2, Briefcase, Edit2, Trash2, X } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
+import CustomSelect from '../components/CustomSelect';
 
 const Projects = () => {
   const [clients, setClients] = useState([]);
@@ -320,17 +321,25 @@ const Projects = () => {
                   </div>
                   <div className="form-group">
                     <label>Client</label>
-                    <select required value={newProject.client} onChange={e => setNewProject({...newProject, client: e.target.value})} className="sleek-select">
-                      <option value="">Select Client...</option>
-                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <CustomSelect 
+                      required
+                      value={newProject.client} 
+                      onChange={val => setNewProject({...newProject, client: val})} 
+                      placeholder="Select Client..."
+                      options={clients.map(c => ({ value: c.id, label: c.name }))}
+                    />
                   </div>
                   <div className="form-group">
                     <label>Revenue Model</label>
-                    <select required value={newProject.project_type} onChange={e => setNewProject({...newProject, project_type: e.target.value})} className="sleek-select">
-                      <option value="FIXED">Fixed Price</option>
-                      <option value="REVENUE_SHARE">Revenue Share</option>
-                    </select>
+                    <CustomSelect 
+                      required
+                      value={newProject.project_type} 
+                      onChange={val => setNewProject({...newProject, project_type: val})} 
+                      options={[
+                        { value: 'FIXED', label: 'Fixed Price' },
+                        { value: 'REVENUE_SHARE', label: 'Revenue Share' }
+                      ]}
+                    />
                   </div>
                   <div className="form-group">
                     <label>Base / Total Value (₹)</label>

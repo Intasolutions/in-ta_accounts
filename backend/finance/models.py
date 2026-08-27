@@ -10,6 +10,9 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='OWNER')
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return self.username
 
@@ -21,6 +24,9 @@ class BankAccount(models.Model):
     upi_id = models.CharField(max_length=255, blank=True, null=True)
     current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return self.name
 
@@ -30,6 +36,9 @@ class Client(models.Model):
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-id']
 
     def __str__(self):
         return self.name
@@ -52,6 +61,9 @@ class Project(models.Model):
     
     created_at = models.DateTimeField(default=timezone.now)
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return f"{self.client.name} - {self.name}"
 
@@ -61,6 +73,9 @@ class Enhancement(models.Model):
     cost = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     date_added = models.DateField(auto_now_add=True)
     
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return f"{self.title} ({self.project.name})"
 
@@ -70,6 +85,9 @@ class Renewal(models.Model):
     cost = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     due_date = models.DateField()
     is_paid = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-id']
 
     def __str__(self):
         return f"{self.title} ({self.project.name})"
@@ -81,13 +99,23 @@ class Invoice(models.Model):
         ('SENT', 'Sent'),
         ('PAID', 'Paid'),
     )
+    PAYMENT_TYPE_CHOICES = (
+        ('PARTIAL', 'Partial Payment'),
+        ('ADVANCE', 'Advance Payment'),
+        ('FULL', 'Full Payment'),
+        ('RENEWAL', 'Renewal / AMC'),
+    )
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='invoices')
     description = models.CharField(max_length=255, blank=True, null=True, help_text="Custom description for the invoice line item")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     date = models.DateField(default=timezone.now)
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default='PARTIAL')
     pdf_file = models.FileField(upload_to='invoices/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
     deposit_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='deposits')
+
+    class Meta:
+        ordering = ['-id']
 
     def __str__(self):
         return f"INV-{self.id} ({self.project.name})"
@@ -95,6 +123,9 @@ class Invoice(models.Model):
 class AdvanceWallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='advance_wallet')
     current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        ordering = ['-id']
 
     def __str__(self):
         return f"{self.user.username}'s Wallet - {self.current_balance}"
@@ -113,6 +144,9 @@ class AdvanceRequest(models.Model):
     source_bank = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='funded_advances')
     date = models.DateTimeField(default=timezone.now)
     
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return f"{self.requested_by.username} - {self.amount} ({self.status})"
 
@@ -141,6 +175,9 @@ class CompanyExpense(models.Model):
     # If DIRECT, which company bank account did it leave from?
     withdrawal_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='direct_expenses')
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return f"{self.expense_type} - {self.payee_description} - {self.amount}"
 
@@ -149,6 +186,9 @@ class MonthLock(models.Model):
     is_locked = models.BooleanField(default=False)
     locked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='locked_months')
     locked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-id']
 
     def __str__(self):
         return f"{self.month_year} - Locked: {self.is_locked}"
@@ -167,6 +207,9 @@ class OwnerDraw(models.Model):
     source_bank = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='funded_drawings')
     date = models.DateTimeField(default=timezone.now)
     
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return f"{self.owner.username} - {self.amount} ({self.status})"
 
@@ -186,5 +229,8 @@ class Transaction(models.Model):
     transaction_type = models.CharField(max_length=25, choices=TYPE_CHOICES)
     description = models.CharField(max_length=255)
     
+    class Meta:
+        ordering = ['-date', '-id']
+
     def __str__(self):
         return f"{self.transaction_type} - {self.amount} - {self.bank_account.name}"

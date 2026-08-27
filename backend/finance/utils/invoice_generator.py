@@ -142,12 +142,15 @@ def generate_invoice_pdf(invoice):
     title_style = ParagraphStyle(
         'InvoiceTitle',
         parent=styles['Heading1'],
-        fontSize=36,
+        fontSize=28,
         textColor=colors.HexColor("#ef4444"), # Vibrant red matching the layout idea
         spaceAfter=15,
         alignment=0 # Left aligned in the remaining space
     )
-    elements.append(Paragraph("<b>INVOICE</b>", title_style))
+    
+    payment_type_display = getattr(invoice, 'get_payment_type_display', lambda: 'Payment')()
+    title_text = f"INVOICE - {payment_type_display.upper()}"
+    elements.append(Paragraph(f"<b>{title_text}</b>", title_style))
     
     # INVOICE METADATA TABLE
     meta_data = [
@@ -228,6 +231,47 @@ def generate_invoice_pdf(invoice):
     ]))
     elements.append(totals_table)
     
+    # PROJECT SUMMARY
+    elements.append(Spacer(1, 20))
+    project = invoice.project
+    enhancements_total = sum(e.cost for e in project.enhancements.all())
+    total_project_cost = project.total_value + enhancements_total
+    
+    amount_billed = sum(inv.amount for inv in project.invoices.filter(status__in=['PAID', 'SENT']))
+    if invoice.status == 'DRAFT' and not invoice.pk:
+        amount_billed += invoice.amount # Add if not saved yet
+    elif invoice.status == 'DRAFT' and invoice.pk:
+        # If it's saved as DRAFT, add its amount manually since filter above excludes DRAFTs
+        amount_billed += invoice.amount
+        
+    remaining_balance = total_project_cost - amount_billed
+
+    summary_data = [
+        ['Project Summary', ''],
+        ['Total Project Cost:', f"Rs. {total_project_cost:,.2f}"],
+        ['Amount Billed to Date:', f"Rs. {amount_billed:,.2f}"],
+        ['Remaining Balance:', f"Rs. {remaining_balance:,.2f}"]
+    ]
+    summary_table = Table(summary_data, colWidths=[FLOWABLE_WIDTH * 0.6, FLOWABLE_WIDTH * 0.4])
+    summary_table.setStyle(TableStyle([
+        ('SPAN', (0,0), (1,0)),
+        ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#1e3a8a")),
+        ('FONTSIZE', (0,0), (-1,0), 10),
+        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        
+        ('ALIGN', (0,1), (0,-1), 'RIGHT'),
+        ('ALIGN', (1,1), (1,-1), 'RIGHT'),
+        ('FONTNAME', (0,1), (1,-2), 'Helvetica'),
+        ('FONTNAME', (0,-1), (1,-1), 'Helvetica-Bold'),
+        ('TEXTCOLOR', (0,-1), (-1,-1), colors.HexColor("#10b981")), # Green balance
+        ('FONTSIZE', (0,1), (-1,-1), 9),
+        ('TOPPADDING', (0,1), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 4),
+    ]))
+    elements.append(summary_table)
+    
     # FOOTER & SIGNATURE
     elements.append(Spacer(1, 60))
     
@@ -260,5 +304,4 @@ def generate_invoice_pdf(invoice):
     pdf_content = buffer.getvalue()
     buffer.close()
     
-    filename = f"INV_{invoice.id}_{invoice.date.strftime('%Y%m%d')}.pdf"
-    return ContentFile(pdf_content, name=filename)
+    return pdf_content

@@ -6,7 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
   PieChart, Pie, Cell, BarChart, Bar 
 } from 'recharts';
-import { Activity, TrendingUp, TrendingDown, DollarSign, AlertCircle, Calendar, Download } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, DollarSign, AlertCircle, Calendar, Download, Filter } from 'lucide-react';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -15,19 +15,21 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   
-  // Data
+  // Date Filtering State
+  const now = new Date();
+  // Default to past 3 months (current month + 2 previous months)
+  const firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0];
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  
+  const [startDate, setStartDate] = useState(firstDay);
+  const [endDate, setEndDate] = useState(lastDay);
+
+  // Raw Data (All-time)
   const [invoices, setInvoices] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [projects, setProjects] = useState([]);
   const [renewals, setRenewals] = useState([]);
   
-  // Derived Stats
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalExpenses, setTotalExpenses] = useState(0);
-  const [netProfit, setNetProfit] = useState(0);
-  const [totalAR, setTotalAR] = useState(0);
-  const [upcomingLiabilities, setUpcomingLiabilities] = useState(0);
-
   // Breakdown Modal State
   const [breakdownModal, setBreakdownModal] = useState({ isOpen: false, title: '', type: '' });
 
@@ -45,32 +47,10 @@ const Dashboard = () => {
         api.get('renewals/')
       ]);
       
-      const invData = invRes.data;
-      const expData = expRes.data;
-      const projData = projRes.data;
-      const renData = renRes.data;
-      
-      setInvoices(invData);
-      setExpenses(expData);
-      setProjects(projData);
-      setRenewals(renData);
-
-      // KPI Calculations
-      const rev = invData.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-      const exp = expData.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-      const ar = invData.filter(i => i.status === 'SENT').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-      
-      const today = new Date();
-      const liabilities = renData
-        .filter(r => !r.is_paid && new Date(r.due_date) >= today)
-        .reduce((acc, curr) => acc + parseFloat(curr.cost), 0);
-      
-      setTotalRevenue(rev);
-      setTotalExpenses(exp);
-      setNetProfit(rev - exp);
-      setTotalAR(ar);
-      setUpcomingLiabilities(liabilities);
-
+      setInvoices(invRes.data);
+      setExpenses(expRes.data);
+      setProjects(projRes.data);
+      setRenewals(renRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -78,9 +58,63 @@ const Dashboard = () => {
     }
   };
 
+  // --------------------------------------------------------
+  // DATE FILTERING
+  // --------------------------------------------------------
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(i => {
+      const d = new Date(i.date);
+      return d >= new Date(startDate) && d <= new Date(endDate);
+    });
+  }, [invoices, startDate, endDate]);
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(e => {
+      const d = new Date(e.date);
+      return d >= new Date(startDate) && d <= new Date(endDate);
+    });
+  }, [expenses, startDate, endDate]);
+
+  // --------------------------------------------------------
+  // KPI CALCULATIONS (Filtered)
+  // --------------------------------------------------------
+  const totalRevenue = useMemo(() => {
+    return filteredInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+  }, [filteredInvoices]);
+
+  const totalExpenses = useMemo(() => {
+    return filteredExpenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+  }, [filteredExpenses]);
+
+  const netProfit = totalRevenue - totalExpenses;
+
+  // A/R (Unpaid Invoices) - All-time, ignoring date filter so we don't miss past unpaid invoices
+  const totalAR = useMemo(() => {
+    return invoices.filter(i => i.status === 'SENT').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+  }, [invoices]);
+
+  // Pending Project Balance (Total Contract Value - Total Paid) for all projects
+  const pendingProjectBalance = useMemo(() => {
+    return projects.reduce((total, p) => {
+      const pInvoices = invoices.filter(i => i.project === p.id && i.status === 'PAID');
+      const rev = pInvoices.reduce((sum, curr) => sum + parseFloat(curr.amount), 0);
+      const pending = parseFloat(p.total_value || 0) - rev;
+      return total + (pending > 0 ? pending : 0);
+    }, 0);
+  }, [projects, invoices]);
+
+  const upcomingLiabilities = useMemo(() => {
+    const today = new Date();
+    return renewals
+      .filter(r => !r.is_paid && new Date(r.due_date) >= today)
+      .reduce((acc, curr) => acc + parseFloat(curr.cost), 0);
+  }, [renewals]);
+
+
   const downloadCAExport = () => {
     const headers = ["Date", "Expense Type", "Description", "Category", "Logged By", "Project", "Amount", "Receipt Link"];
-    const rows = expenses.map(exp => [
+    // Using filtered expenses so the CA export matches the selected date range
+    const rows = filteredExpenses.map(exp => [
       exp.date,
       exp.expense_type === 'DIRECT_CORPORATE' ? 'Direct' : 'Advance',
       `"${exp.payee_description.replace(/"/g, '""')}"`,
@@ -96,7 +130,7 @@ const Dashboard = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `CA_Expense_Register_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `CA_Expense_Export_${startDate}_to_${endDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -110,13 +144,14 @@ const Dashboard = () => {
   // CHART DATA MEMOIZATION
   // --------------------------------------------------------
   
+  // Cash Flow Trend (All-Time Data, sliced to last 3 months)
   const cashFlowData = useMemo(() => {
     const dataMap = {};
     const processDate = (dateStr, amount, type) => {
       const d = new Date(dateStr);
       const monthYear = d.toLocaleString('default', { month: 'short', year: '2-digit' });
       if (!dataMap[monthYear]) {
-        dataMap[monthYear] = { name: monthYear, Income: 0, Expenses: 0, sortVal: d.getTime() };
+        dataMap[monthYear] = { name: monthYear, Income: 0, Expenses: 0, sortVal: new Date(d.getFullYear(), d.getMonth(), 1).getTime() };
       }
       dataMap[monthYear][type] += parseFloat(amount);
     };
@@ -124,17 +159,19 @@ const Dashboard = () => {
     invoices.filter(i => i.status === 'PAID').forEach(i => processDate(i.date, i.amount, 'Income'));
     expenses.forEach(e => processDate(e.date, e.amount, 'Expenses'));
 
-    return Object.values(dataMap).sort((a, b) => a.sortVal - b.sortVal).slice(-6); // Last 6 months
+    return Object.values(dataMap).sort((a, b) => a.sortVal - b.sortVal).slice(-3); // Last 3 months
   }, [invoices, expenses]);
 
+  // Expense Donut Chart (Filtered by Date Picker)
   const expenseCategoryData = useMemo(() => {
     const dataMap = {};
-    expenses.forEach(e => {
+    filteredExpenses.forEach(e => {
       dataMap[e.category] = (dataMap[e.category] || 0) + parseFloat(e.amount);
     });
     return Object.keys(dataMap).map(k => ({ name: k, value: dataMap[k] }));
-  }, [expenses]);
+  }, [filteredExpenses]);
 
+  // Project Profitability (All-Time Data, ignoring Date Picker)
   const projectProfitabilityData = useMemo(() => {
     return projects.map(p => {
       const pInvoices = invoices.filter(i => i.project === p.id && i.status === 'PAID');
@@ -154,6 +191,7 @@ const Dashboard = () => {
     }).sort((a, b) => b.NetProfit - a.NetProfit);
   }, [projects, invoices, expenses]);
 
+  // Active AMCs (All-Time Data, ignoring Date Picker)
   const activeAMCs = useMemo(() => {
     const today = new Date();
     return projects.filter(p => {
@@ -171,15 +209,35 @@ const Dashboard = () => {
 
   return (
     <div style={{ paddingBottom: '3rem' }}>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 className="page-title gradient-text">Command Center</h1>
           <p className="text-muted" style={{ margin: 0 }}>Overview of financial performance and project health.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        
+        {/* Date Filter & Actions */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--surface-border)' }}>
+            <Filter size={16} color="var(--primary-color)" />
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={e => setStartDate(e.target.value)}
+              style={{ border: 'none', background: 'transparent', color: 'var(--text-color)', outline: 'none' }}
+            />
+            <span style={{ color: 'var(--text-muted)' }}>to</span>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={e => setEndDate(e.target.value)}
+              style={{ border: 'none', background: 'transparent', color: 'var(--text-color)', outline: 'none' }}
+            />
+          </div>
+
           <button className="btn btn-secondary" onClick={() => navigate('/expenses')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <DollarSign size={16} /> Request Advance / Add Expense
+            <DollarSign size={16} /> Request Advance
           </button>
+          
           {user.role === 'SUPER_ADMIN' && (
             <button className="btn btn-primary" onClick={downloadCAExport} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Download size={16} /> CA Export
@@ -188,24 +246,24 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* KPI CARDS */}
+      {/* KPI CARDS (Filtered by Date) */}
       <div className="dashboard-kpi-grid">
         <div className="card" style={{ marginBottom: 0, borderTop: '4px solid var(--success)', cursor: 'pointer', transition: 'transform 0.2s' }} 
-             onClick={() => setBreakdownModal({ isOpen: true, title: 'YTD Income Breakdown', type: 'INCOME' })}
+             onClick={() => setBreakdownModal({ isOpen: true, title: 'Period Income Breakdown', type: 'INCOME' })}
              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <TrendingUp size={16} /> YTD Income (Paid)
+            <TrendingUp size={16} /> Income (Paid)
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>{formatCurrency(totalRevenue)}</div>
         </div>
         
         <div className="card" style={{ marginBottom: 0, borderTop: '4px solid var(--danger)', cursor: 'pointer', transition: 'transform 0.2s' }}
-             onClick={() => setBreakdownModal({ isOpen: true, title: 'YTD Expenses Breakdown', type: 'EXPENSES' })}
+             onClick={() => setBreakdownModal({ isOpen: true, title: 'Period Expenses Breakdown', type: 'EXPENSES' })}
              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <TrendingDown size={16} /> YTD Expenses
+            <TrendingDown size={16} /> Expenses
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>{formatCurrency(totalExpenses)}</div>
         </div>
@@ -218,22 +276,29 @@ const Dashboard = () => {
         </div>
         
         <div className="card" style={{ marginBottom: 0, borderTop: '4px solid var(--warning)', cursor: 'pointer', transition: 'transform 0.2s' }}
-             onClick={() => setBreakdownModal({ isOpen: true, title: 'A/R (Unpaid) Breakdown', type: 'AR' })}
+             onClick={() => setBreakdownModal({ isOpen: true, title: 'All-Time A/R (Unpaid) Breakdown', type: 'AR' })}
              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <AlertCircle size={16} /> A/R (Unpaid)
+            <AlertCircle size={16} /> A/R (Unpaid Invoices)
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>{formatCurrency(totalAR)}</div>
+        </div>
+
+        <div className="card" style={{ marginBottom: 0, borderTop: '4px solid #8b5cf6' }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Activity size={16} /> Pending Project Balance
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>{formatCurrency(pendingProjectBalance)}</div>
         </div>
       </div>
 
       {/* CHARTS SECTION */}
       <div className="dashboard-content-grid">
         
-        {/* Cash Flow Chart */}
+        {/* Cash Flow Chart (Always 3 Months) */}
         <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ margin: '0 0 1.5rem 0' }}>Cash Flow Trend (6 Months)</h3>
+          <h3 style={{ margin: '0 0 1.5rem 0' }}>Cash Flow Trend (Last 3 Months)</h3>
           <div style={{ height: 300, width: '100%' }}>
             <ResponsiveContainer>
               <LineChart data={cashFlowData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
@@ -249,9 +314,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Expense Donut Chart */}
+        {/* Expense Donut Chart (Filtered by Date) */}
         <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ margin: '0 0 1.5rem 0' }}>Expense Breakdown</h3>
+          <h3 style={{ margin: '0 0 1.5rem 0' }}>Expense Breakdown (Selected Period)</h3>
           <div style={{ height: 300, width: '100%' }}>
             {expenseCategoryData.length > 0 ? (
               <ResponsiveContainer>
@@ -266,7 +331,7 @@ const Dashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-               <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>No expense data</div>
+               <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>No expense data for this period</div>
             )}
           </div>
         </div>
@@ -275,9 +340,9 @@ const Dashboard = () => {
       {/* BOTTOM SECTION: PROJECTS & ALERTS */}
       <div className="dashboard-content-grid" style={{ marginBottom: 0 }}>
         
-        {/* Project Wise Report */}
+        {/* Project Wise Report (All-Time) */}
         <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ margin: '0 0 1.5rem 0' }}>Project-Wise Expense & Profitability Report</h3>
+          <h3 style={{ margin: '0 0 1.5rem 0' }}>All-Time Project Profitability Report</h3>
           <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto', overflowX: 'auto' }}>
             <table className="responsive-table">
               <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-color)', zIndex: 1 }}>
@@ -305,7 +370,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* AMC & Renewals Center */}
+        {/* AMC & Renewals Center (All-Time) */}
         <div className="card" style={{ marginBottom: 0, background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
           <h3 style={{ margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Calendar size={20} color="var(--primary-color)" /> AMCs & Renewals
@@ -373,7 +438,7 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {breakdownModal.type === 'INCOME' && invoices.filter(i => i.status === 'PAID').map(i => (
+                  {breakdownModal.type === 'INCOME' && filteredInvoices.filter(i => i.status === 'PAID').map(i => (
                     <tr key={i.id}>
                       <td data-label="Date">{i.date}</td>
                       <td data-label="Project">{i.project_name || `Project ID: ${i.project}`}</td>
@@ -382,7 +447,7 @@ const Dashboard = () => {
                     </tr>
                   ))}
                   
-                  {breakdownModal.type === 'AR' && invoices.filter(i => i.status === 'SENT').map(i => (
+                  {breakdownModal.type === 'AR' && filteredInvoices.filter(i => i.status === 'SENT').map(i => (
                     <tr key={i.id}>
                       <td data-label="Date">{i.date}</td>
                       <td data-label="Project">{i.project_name || `Project ID: ${i.project}`}</td>
@@ -391,7 +456,7 @@ const Dashboard = () => {
                     </tr>
                   ))}
 
-                  {breakdownModal.type === 'EXPENSES' && expenses.map(e => (
+                  {breakdownModal.type === 'EXPENSES' && filteredExpenses.map(e => (
                     <tr key={e.id}>
                       <td data-label="Date">{e.date}</td>
                       <td data-label="Payee / Desc">{e.payee_description}</td>
