@@ -40,6 +40,20 @@ class PasswordResetDirectView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'No account found with this email address.'}, status=404)
 
+class CheckEmailView(APIView):
+    permission_classes = [] # Allow unauthenticated access
+    authentication_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required.'}, status=400)
+            
+        User = get_user_model()
+        if User.objects.filter(email=email).exists():
+            return Response({'exists': True})
+        return Response({'error': 'No account found with this email address.'}, status=404)
+
 class BankAccountViewSet(viewsets.ModelViewSet):
     queryset = BankAccount.objects.all()
     serializer_class = BankAccountSerializer

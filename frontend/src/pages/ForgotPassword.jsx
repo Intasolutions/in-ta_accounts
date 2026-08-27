@@ -12,16 +12,25 @@ const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
     if (!email) {
       setError('Please enter your email address.');
       return;
     }
-    // In a real app, you'd check if the email exists here.
-    // For this direct flow, we proceed to password entry.
+    
     setError('');
-    setStep(2);
+    setIsLoading(true);
+    
+    try {
+      await api.post('/finance/check-email/', { email });
+      setStep(2);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.error || 'No account found with this email address.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReset = async (e) => {
@@ -142,8 +151,9 @@ const ForgotPassword = () => {
               type="submit" 
               className="btn btn-primary" 
               style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', marginTop: '1rem' }}
+              disabled={isLoading}
             >
-              Continue
+              {isLoading ? 'Checking...' : 'Continue'}
             </button>
           </form>
         )}
