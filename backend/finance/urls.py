@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet, ClientViewSet, ProjectViewSet, 
     InvoiceViewSet, AdvanceWalletViewSet, AdvanceRequestViewSet, CompanyExpenseViewSet, MonthLockViewSet,
-    EnhancementViewSet, RenewalViewSet, BankAccountViewSet, TransactionViewSet, OwnerDrawViewSet
+    EnhancementViewSet, RenewalViewSet, BankAccountViewSet, TransactionViewSet, OwnerDrawViewSet,
+    PasswordResetDirectView
 )
 
 router = DefaultRouter()
@@ -22,5 +23,6 @@ router.register(r'transactions', TransactionViewSet, basename='transaction')
 router.register(r'owner-draws', OwnerDrawViewSet, basename='ownerdraw')
 
 urlpatterns = [
+    path('direct-password-reset/', PasswordResetDirectView.as_view(), name='direct_password_reset'),
     path('', include(router.urls)),
 ]

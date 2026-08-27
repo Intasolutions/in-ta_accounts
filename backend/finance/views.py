@@ -1,7 +1,9 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
 from decimal import Decimal
 from django.core.mail import send_mail
 from django.db.models import Sum
@@ -17,6 +19,26 @@ from .utils.invoice_generator import generate_invoice_pdf
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+class PasswordResetDirectView(APIView):
+    permission_classes = [] # Allow unauthenticated access
+    authentication_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        new_password = request.data.get('new_password')
+
+        if not email or not new_password:
+            return Response({'error': 'Email and new password are required.'}, status=400)
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(email=email)
+            user.set_password(new_password)
+            user.save()
+            return Response({'success': 'Password reset successfully.'})
+        except User.DoesNotExist:
+            return Response({'error': 'No account found with this email address.'}, status=404)
 
 class BankAccountViewSet(viewsets.ModelViewSet):
     queryset = BankAccount.objects.all()

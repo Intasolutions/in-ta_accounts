@@ -10,6 +10,7 @@ import MonthEnd from './pages/MonthEnd';
 import Banking from './pages/Banking';
 import OwnerDrawings from './pages/OwnerDrawings';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
 import UserManagement from './pages/UserManagement';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import './index.css';
@@ -19,26 +20,30 @@ const MainApp = () => {
 
   if (loading) return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
 
-  if (!user) {
-    return <Login />;
-  }
-
   return (
     <Router>
-      <Layout>
+      {!user ? (
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:id" element={<ProjectDetail />} />
-          <Route path="/invoices" element={<Invoices />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/banking" element={<Banking />} />
-          <Route path="/owner-drawings" element={<OwnerDrawings />} />
-          <Route path="/month-end" element={<MonthEnd />} />
-          <Route path="/users" element={user.role === 'ACCOUNTANT' ? <UserManagement /> : <Navigate to="/" />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
-      </Layout>
+      ) : (
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/banking" element={<Banking />} />
+            <Route path="/owner-drawings" element={<OwnerDrawings />} />
+            <Route path="/month-end" element={<MonthEnd />} />
+            <Route path="/users" element={user.role === 'ACCOUNTANT' ? <UserManagement /> : <Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Layout>
+      )}
     </Router>
   );
 };
