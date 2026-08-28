@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { Plus, Building2, Briefcase, Edit2, Trash2, X } from 'lucide-react';
@@ -8,6 +10,9 @@ import SearchBar from '../components/SearchBar';
 import CustomSelect from '../components/CustomSelect';
 
 const Projects = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +38,10 @@ const Projects = () => {
     project_type: 'FIXED',
     total_value: '',
     amc_percentage: '15',
-    delivery_date: ''
+    delivery_date: '',
+    revenue_share_type: 'PROFIT_SHARE',
+    revenue_share_percentage: '',
+    per_seat_cost: ''
   });
 
   useEffect(() => {
@@ -68,7 +76,7 @@ const Projects = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to save client');
+      toast.error('Failed to save client');
     }
   };
 
@@ -84,13 +92,13 @@ const Projects = () => {
   };
 
   const handleDeleteClient = async (id) => {
-    if (window.confirm("Are you sure you want to delete this client?")) {
+    if (await confirm("Are you sure you want to delete this client?")) {
       try {
         await api.delete(`clients/${id}/`);
         fetchData();
       } catch (err) {
         console.error(err);
-        alert('Failed to delete client');
+        toast.error('Failed to delete client');
       }
     }
   };
@@ -106,6 +114,14 @@ const Projects = () => {
     try {
       const payload = { ...newProject };
       if (!payload.delivery_date) delete payload.delivery_date;
+      if (payload.project_type !== 'REVENUE_SHARE') {
+        delete payload.revenue_share_type;
+        delete payload.revenue_share_percentage;
+        delete payload.per_seat_cost;
+      }
+      if (payload.revenue_share_type === 'PROFIT_SHARE') {
+        delete payload.per_seat_cost;
+      }
       
       if (editingProject) {
         await api.put(`projects/${editingProject}/`, payload);
@@ -116,7 +132,7 @@ const Projects = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to save project');
+      toast.error('Failed to save project');
     }
   };
 
@@ -128,25 +144,28 @@ const Projects = () => {
       project_type: project.project_type,
       total_value: project.total_value,
       amc_percentage: project.amc_percentage || '15',
-      delivery_date: project.delivery_date || ''
+      delivery_date: project.delivery_date || '',
+      revenue_share_type: project.revenue_share_type || 'PROFIT_SHARE',
+      revenue_share_percentage: project.revenue_share_percentage || '',
+      per_seat_cost: project.per_seat_cost || ''
     });
     setShowProjectForm(true);
   };
 
   const handleDeleteProject = async (id) => {
-    if (window.confirm("Are you sure you want to delete this project?")) {
+    if (await confirm("Are you sure you want to delete this project?")) {
       try {
         await api.delete(`projects/${id}/`);
         fetchData();
       } catch (err) {
         console.error(err);
-        alert('Failed to delete project');
+        toast.error('Failed to delete project');
       }
     }
   };
 
   const resetProjectForm = () => {
-    setNewProject({ name: '', client: '', project_type: 'FIXED', total_value: '', amc_percentage: '15', delivery_date: '' });
+    setNewProject({ name: '', client: '', project_type: 'FIXED', total_value: '', amc_percentage: '15', delivery_date: '', revenue_share_type: 'PROFIT_SHARE', revenue_share_percentage: '', per_seat_cost: '' });
     setEditingProject(null);
     setShowProjectForm(false);
   };
@@ -337,13 +356,41 @@ const Projects = () => {
                       onChange={val => setNewProject({...newProject, project_type: val})} 
                       options={[
                         { value: 'FIXED', label: 'Fixed Price' },
+                        { value: 'HOURLY', label: 'Hourly' },
+                        { value: 'AMC', label: 'AMC' },
                         { value: 'REVENUE_SHARE', label: 'Revenue Share' }
                       ]}
                     />
                   </div>
+                  {newProject.project_type === 'REVENUE_SHARE' && (
+                    <>
+                      <div className="form-group">
+                        <label>Revenue Share Type</label>
+                        <CustomSelect 
+                          required
+                          value={newProject.revenue_share_type} 
+                          onChange={val => setNewProject({...newProject, revenue_share_type: val})} 
+                          options={[
+                            { value: 'PROFIT_SHARE', label: 'Monthly Profit Share' },
+                            { value: 'PER_SEAT', label: 'Per Seat / Admission Share' }
+                          ]}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Share Percentage (%)</label>
+                        <input type="number" step="0.01" required value={newProject.revenue_share_percentage} onChange={e => setNewProject({...newProject, revenue_share_percentage: e.target.value})} placeholder="e.g. 20" />
+                      </div>
+                      {newProject.revenue_share_type === 'PER_SEAT' && (
+                        <div className="form-group">
+                          <label>Total Cost Per Seat (USD / INR)</label>
+                          <input type="number" step="0.01" required value={newProject.per_seat_cost} onChange={e => setNewProject({...newProject, per_seat_cost: e.target.value})} placeholder="e.g. 5000" />
+                        </div>
+                      )}
+                    </>
+                  )}
                   <div className="form-group">
-                    <label>Base / Total Value (₹)</label>
-                    <input type="number" required value={newProject.total_value} onChange={e => setNewProject({...newProject, total_value: e.target.value})} placeholder="0.00" />
+                    <label>Base / Total Value (₹) {newProject.project_type === 'REVENUE_SHARE' && '(Optional for RS)'}</label>
+                    <input type="number" required={newProject.project_type !== 'REVENUE_SHARE'} value={newProject.total_value} onChange={e => setNewProject({...newProject, total_value: e.target.value})} placeholder="0.00" />
                   </div>
                   <div className="form-group">
                     <label>AMC % (if applicable)</label>

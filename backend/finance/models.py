@@ -59,6 +59,15 @@ class Project(models.Model):
     amc_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="e.g. 15.00 for 15%")
     delivery_date = models.DateField(null=True, blank=True, help_text="Date project is delivered/completed. AMC starts 3 months after.")
     
+    # Revenue Share Config (if project_type == 'REVENUE_SHARE')
+    REVENUE_SHARE_CHOICES = (
+        ('PROFIT_SHARE', 'Monthly Profit Share'),
+        ('PER_SEAT', 'Per Seat / Admission Share'),
+    )
+    revenue_share_type = models.CharField(max_length=20, choices=REVENUE_SHARE_CHOICES, null=True, blank=True)
+    revenue_share_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="e.g. 20.00 for 20%")
+    per_seat_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Total cost of 1 seat/admission in USD or INR")
+    
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -113,6 +122,10 @@ class Invoice(models.Model):
     pdf_file = models.FileField(upload_to='invoices/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
     deposit_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='deposits')
+
+    # For Revenue Share tracking
+    revenue_share_base_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Total profit pool for the month (USD/INR)")
+    revenue_share_seats_sold = models.IntegerField(null=True, blank=True, help_text="Number of seats sold")
 
     class Meta:
         ordering = ['-id']

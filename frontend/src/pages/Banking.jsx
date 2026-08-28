@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import api from '../api';
 import { Landmark, Plus, Share2, Wallet, Edit2, Trash2, X, ArrowRightLeft, List } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
@@ -7,6 +9,9 @@ import SearchBar from '../components/SearchBar';
 import CustomSelect from '../components/CustomSelect';
 
 const Banking = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -53,7 +58,7 @@ const Banking = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to save account');
+      toast.error('Failed to save account');
     }
   };
 
@@ -71,13 +76,13 @@ const Banking = () => {
   };
 
   const handleDeleteAccount = async (id) => {
-    if (window.confirm("Are you sure you want to delete this account? This will orphan any linked transactions.")) {
+    if (await confirm("Are you sure you want to delete this account? This will orphan any linked transactions.")) {
       try {
         await api.delete(`bank-accounts/${id}/`);
         fetchData();
       } catch (err) {
         console.error(err);
-        alert('Failed to delete account');
+        toast.error('Failed to delete account');
       }
     }
   };
@@ -97,7 +102,7 @@ const Banking = () => {
   const handleTransfer = async (e) => {
     e.preventDefault();
     if (transferData.from_account === transferData.to_account_id) {
-      alert("Cannot transfer to the same account");
+      toast.error("Cannot transfer to the same account");
       return;
     }
     try {
@@ -105,14 +110,14 @@ const Banking = () => {
         to_account_id: transferData.to_account_id,
         amount: transferData.amount
       });
-      alert('Transfer successful');
+      toast.success('Transfer successful');
       setShowTransferForm(false);
       setTransferData({from_account: '', to_account_id: '', amount: ''});
       fetchData();
       if (viewingLedgerFor) handleViewLedger(viewingLedgerFor);
     } catch(err) {
       console.error(err);
-      alert('Transfer failed');
+      toast.error('Transfer failed');
     }
   };
 

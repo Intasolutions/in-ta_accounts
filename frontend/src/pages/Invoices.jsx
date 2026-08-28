@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import api from '../api';
 import { FileText, Plus, Edit2, Trash2, Download, X, Copy, ExternalLink, Calendar } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
@@ -7,6 +9,9 @@ import SearchBar from '../components/SearchBar';
 import CustomSelect from '../components/CustomSelect';
 
 const Invoices = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const [invoices, setInvoices] = useState([]);
   const [projects, setProjects] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -51,7 +56,7 @@ const Invoices = () => {
       if (payload.status !== 'PAID') {
         payload.deposit_account = null; // Only link account if PAID
       } else if (!payload.deposit_account) {
-        alert("Please select a deposit account for PAID invoices.");
+        toast.error("Please select a deposit account for PAID invoices.");
         return;
       }
       // If empty string, make it null
@@ -64,10 +69,10 @@ const Invoices = () => {
       }
       resetForm();
       fetchData();
-      if (!editingInvoice) alert("Invoice generated and saved as Draft!");
+      if (!editingInvoice) toast.success("Invoice generated and saved as Draft!");
     } catch (err) {
       console.error(err);
-      alert('Failed to save invoice');
+      toast.error('Failed to save invoice');
     }
   };
 
@@ -84,13 +89,13 @@ const Invoices = () => {
   };
 
   const handleDeleteInvoice = async (id) => {
-    if (window.confirm("Are you sure you want to delete this invoice?")) {
+    if (await confirm("Are you sure you want to delete this invoice?")) {
       try {
         await api.delete(`invoices/${id}/`);
         fetchData();
       } catch (err) {
         console.error(err);
-        alert('Failed to delete invoice');
+        toast.error('Failed to delete invoice');
       }
     }
   };
@@ -113,7 +118,7 @@ const Invoices = () => {
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (error) {
       console.error('Error downloading PDF', error);
-      alert('Failed to generate PDF. Please try again.');
+      toast.error('Failed to generate PDF. Please try again.');
     }
   };
 

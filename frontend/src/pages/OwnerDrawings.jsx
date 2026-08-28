@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 import { Gem, Plus, CheckCircle, XCircle, X } from 'lucide-react';
@@ -8,6 +10,9 @@ import SearchBar from '../components/SearchBar';
 import CustomSelect from '../components/CustomSelect';
 
 const OwnerDrawings = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const { user } = useContext(AuthContext);
   const [drawings, setDrawings] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -54,13 +59,13 @@ const OwnerDrawings = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to submit drawing request');
+      toast.error('Failed to submit drawing request');
     }
   };
 
   const handleApprove = async (id) => {
     if (!approvalBank) {
-      alert("Please select a source bank account to fund this draw from.");
+      toast.error("Please select a source bank account to fund this draw from.");
       return;
     }
     try {
@@ -70,12 +75,12 @@ const OwnerDrawings = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to approve request');
+      toast.error('Failed to approve request');
     }
   };
 
   const handleReject = async (id) => {
-    if (window.confirm("Reject this request?")) {
+    if (await confirm("Reject this request?")) {
       try {
         await api.post(`owner-draws/${id}/reject/`);
         fetchData();

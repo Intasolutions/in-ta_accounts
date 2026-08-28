@@ -1,20 +1,61 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 const CustomSelect = ({ value, onChange, options, placeholder = "Select...", className = "", required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({});
 
-  // Handle outside click
+  // Handle outside click and scroll
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        if (menuRef.current && menuRef.current.contains(event.target)) {
+          return;
+        }
         setIsOpen(false);
       }
     };
+    
+    const handleScroll = () => {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [isOpen]);
+
+  // Update position when opened
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setMenuStyle({
+        position: 'absolute',
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        background: 'var(--bg-color)',
+        border: '1px solid var(--surface-border)',
+        borderRadius: '0.75rem',
+        padding: '0.5rem',
+        zIndex: 9999,
+        maxHeight: '250px',
+        overflowY: 'auto',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)'
+      });
+    }
+  }, [isOpen]);
 
   const selectedOption = options.find(opt => String(opt.value) === String(value));
 
@@ -54,23 +95,11 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
         <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
       </div>
 
-      {isOpen && (
+      {isOpen && typeof document !== 'undefined' && createPortal(
         <div 
+          ref={menuRef}
           className="custom-select-menu"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 0.5rem)',
-            left: 0,
-            right: 0,
-            background: 'var(--bg-color)',
-            border: '1px solid var(--surface-border)',
-            borderRadius: '0.75rem',
-            padding: '0.5rem',
-            zIndex: 1000,
-            maxHeight: '250px',
-            overflowY: 'auto',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)'
-          }}
+          style={menuStyle}
         >
           {options.map((opt, index) => {
             const isSelected = String(opt.value) === String(value);
@@ -101,10 +130,12 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
               </div>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
 };
 
 export default CustomSelect;
+

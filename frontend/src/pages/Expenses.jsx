@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 import { Wallet, Plus, ArrowDownToLine, Receipt, Edit2, Trash2, X, CheckCircle, XCircle, Filter } from 'lucide-react';
@@ -8,6 +10,9 @@ import SearchBar from '../components/SearchBar';
 import CustomSelect from '../components/CustomSelect';
 
 const Expenses = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('register'); // 'register' or 'advances'
   const [editingExpense, setEditingExpense] = useState(null);
@@ -86,7 +91,7 @@ const Expenses = () => {
     e.preventDefault();
     try {
       if (newExpense.expense_type === 'DIRECT' && !newExpense.withdrawal_account) {
-        alert("Please select a Paid From account for Direct expenses.");
+        toast.error("Please select a Paid From account for Direct expenses.");
         return;
       }
 
@@ -127,7 +132,7 @@ const Expenses = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to save expense');
+      toast.error('Failed to save expense');
     }
   };
 
@@ -147,13 +152,13 @@ const Expenses = () => {
   };
 
   const handleDeleteExpense = async (id) => {
-    if (window.confirm("Delete this expense?")) {
+    if (await confirm("Delete this expense?")) {
       try {
         await api.delete(`company-expenses/${id}/`);
         fetchData();
       } catch (err) {
         console.error(err);
-        alert('Failed to delete expense');
+        toast.error('Failed to delete expense');
       }
     }
   };
@@ -176,16 +181,16 @@ const Expenses = () => {
       setEditingAdvance(null);
       setNewAdvance({ amount: '', purpose: '' });
       fetchData();
-      alert('Advance request saved successfully!');
+      toast.success('Advance request saved successfully!');
     } catch (err) {
       console.error(err);
-      alert('Failed to submit request');
+      toast.error('Failed to submit request');
     }
   };
 
   const handleApproveAdvance = async (id) => {
     if (!approvalBank) {
-      alert("Please select a bank account to fund this advance from.");
+      toast.error("Please select a bank account to fund this advance from.");
       return;
     }
     try {
@@ -195,7 +200,7 @@ const Expenses = () => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to approve request');
+      toast.error('Failed to approve request');
     }
   };
 
@@ -209,7 +214,7 @@ const Expenses = () => {
   };
 
   const handleRejectAdvance = async (id) => {
-    if (window.confirm("Reject this request?")) {
+    if (await confirm("Reject this request?")) {
       try {
         await api.post(`advance-requests/${id}/reject/`);
         fetchData();

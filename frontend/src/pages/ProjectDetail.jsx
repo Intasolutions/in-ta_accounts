@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api';
 import { ArrowLeft, Plus, CheckCircle, Clock, Edit2, Trash2, X, FileText, Download, DollarSign } from 'lucide-react';
@@ -8,6 +10,9 @@ import SearchBar from '../components/SearchBar';
 import CustomSelect from '../components/CustomSelect';
 
 const ProjectDetail = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +34,22 @@ const ProjectDetail = () => {
   const [enhancementSearch, setEnhancementSearch] = useState('');
   const [renewalSearch, setRenewalSearch] = useState('');
   const [expenseSearch, setExpenseSearch] = useState('');
+
+  const [usdRate, setUsdRate] = useState(83.5); // Fallback rate
+  const [rsInputUsd, setRsInputUsd] = useState('');
+  const [rsSeats, setRsSeats] = useState('');
+  
+  useEffect(() => {
+    // Fetch live USD to INR rate
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.rates && data.rates.INR) {
+          setUsdRate(data.rates.INR);
+        }
+      })
+      .catch(err => console.error('Error fetching exchange rate:', err));
+  }, []);
 
   useEffect(() => {
     fetchProject();
@@ -68,7 +89,7 @@ const ProjectDetail = () => {
       fetchProject();
     } catch (err) {
       console.error(err);
-      alert("Failed to save enhancement");
+      toast.error("Failed to save enhancement");
     }
   };
 
@@ -79,7 +100,7 @@ const ProjectDetail = () => {
   };
 
   const handleDeleteEnhancement = async (enhId) => {
-    if (window.confirm("Are you sure you want to delete this enhancement?")) {
+    if (await confirm("Are you sure you want to delete this enhancement?")) {
       try {
         await api.delete(`enhancements/${enhId}/`);
         fetchProject();
@@ -107,7 +128,7 @@ const ProjectDetail = () => {
       fetchProject();
     } catch (err) {
       console.error(err);
-      alert("Failed to save renewal");
+      toast.error("Failed to save renewal");
     }
   };
 
@@ -118,7 +139,7 @@ const ProjectDetail = () => {
   };
 
   const handleDeleteRenewal = async (renId) => {
-    if (window.confirm("Are you sure you want to delete this renewal?")) {
+    if (await confirm("Are you sure you want to delete this renewal?")) {
       try {
         await api.delete(`renewals/${renId}/`);
         fetchProject();
@@ -175,6 +196,8 @@ const ProjectDetail = () => {
 
   const resetInvoiceForm = () => {
     setNewInvoice({ amount: '', date: new Date().toISOString().split('T')[0], status: 'PAID', deposit_account: '', description: '', payment_type: 'PARTIAL' });
+    setRsInputUsd('');
+    setRsSeats('');
     setShowInvoiceForm(false);
   };
 
@@ -182,10 +205,33 @@ const ProjectDetail = () => {
     e.preventDefault();
     try {
       const payload = { ...newInvoice, project: id };
+      
+      if (project.project_type === 'REVENUE_SHARE') {
+        const perc = parseFloat(project.revenue_share_percentage || 0);
+        
+        if (project.revenue_share_type === 'PROFIT_SHARE') {
+          const usdProfit = parseFloat(rsInputUsd || 0);
+          const inrProfit = usdProfit * usdRate;
+          const shareInr = inrProfit * (perc / 100);
+          payload.amount = shareInr.toFixed(2);
+          payload.revenue_share_base_amount = inrProfit.toFixed(2);
+          payload.description = `Monthly Profit Share (USD ${usdProfit} @ ₹${usdRate.toFixed(2)} = ₹${inrProfit.toFixed(2)} x ${perc}%)`;
+        } else if (project.revenue_share_type === 'PER_SEAT') {
+          const seats = parseInt(rsSeats || 0);
+          const costPerSeat = parseFloat(project.per_seat_cost || 0);
+          const inrBase = seats * costPerSeat * usdRate;
+          const shareInr = inrBase * (perc / 100);
+          payload.amount = shareInr.toFixed(2);
+          payload.revenue_share_seats_sold = seats;
+          payload.description = `Admission Share - ${seats} Seats (${perc}% of USD ${costPerSeat} per seat @ ₹${usdRate.toFixed(2)})`;
+        }
+        payload.payment_type = 'PARTIAL';
+      }
+
       if (payload.status !== 'PAID') {
         payload.deposit_account = null;
       } else if (!payload.deposit_account) {
-        alert("Please select a deposit account for PAID invoices.");
+        toast.error("Please select a deposit account for PAID invoices.");
         return;
       }
       if (payload.deposit_account === '') payload.deposit_account = null;
@@ -193,10 +239,14 @@ const ProjectDetail = () => {
       await api.post('invoices/', payload);
       resetInvoiceForm();
       fetchProject();
-      alert("Payment logged and Invoice PDF generated successfully!");
+      if (project.project_type === 'REVENUE_SHARE') {
+        toast.success("Revenue Share ledger logged successfully!");
+      } else {
+        toast.success("Payment logged and Invoice PDF generated successfully!");
+      }
     } catch (err) {
       console.error(err);
-      alert('Failed to log payment');
+      toast.error('Failed to log payment');
     }
   };
 
@@ -210,7 +260,7 @@ const ProjectDetail = () => {
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (error) {
       console.error('Error downloading PDF', error);
-      alert('Failed to generate PDF. Please try again.');
+      toast.error('Failed to generate PDF. Please try again.');
     }
   };
 
@@ -279,17 +329,51 @@ const ProjectDetail = () => {
         {showInvoiceForm && (
           <form onSubmit={handleAddInvoice} className="premium-form">
             <div className="premium-form-header">
-              <h3 className="premium-form-title" style={{ color: 'var(--success)' }}>Log Payment Received / Advance</h3>
+              <h3 className="premium-form-title" style={{ color: 'var(--success)' }}>
+                {project.project_type === 'REVENUE_SHARE' ? 'Log Revenue Share Payment' : 'Log Payment Received / Advance'}
+              </h3>
             </div>
+            
+            {project.project_type === 'REVENUE_SHARE' && (
+              <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                    {project.revenue_share_type === 'PROFIT_SHARE' ? 'Monthly Profit Share' : 'Per Seat / Admission Share'}
+                  </div>
+                  <div style={{ fontSize: '0.85rem' }}>Live Rate: 1 USD = <span className="strong">₹{usdRate.toFixed(2)}</span></div>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  Share Percentage: <span className="strong">{project.revenue_share_percentage}%</span>
+                </div>
+              </div>
+            )}
+
             <div className="premium-form-grid">
-              <div className="form-group">
-                <label>Amount Received (₹)</label>
-                <input type="number" step="0.01" required value={newInvoice.amount} onChange={e => setNewInvoice({...newInvoice, amount: e.target.value})} placeholder="0.00" />
-              </div>
-              <div className="form-group">
-                <label>Description (Optional)</label>
-                <input type="text" value={newInvoice.description} onChange={e => setNewInvoice({...newInvoice, description: e.target.value})} placeholder="Custom text for PDF Invoice..." />
-              </div>
+              {project.project_type === 'REVENUE_SHARE' ? (
+                project.revenue_share_type === 'PROFIT_SHARE' ? (
+                  <div className="form-group">
+                    <label>Total Profit This Month (USD)</label>
+                    <input type="number" step="0.01" required value={rsInputUsd} onChange={e => setRsInputUsd(e.target.value)} placeholder="0.00" />
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label>Number of Seats / Admissions</label>
+                    <input type="number" required value={rsSeats} onChange={e => setRsSeats(e.target.value)} placeholder="e.g. 5" />
+                  </div>
+                )
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label>Amount Received (₹)</label>
+                    <input type="number" step="0.01" required value={newInvoice.amount} onChange={e => setNewInvoice({...newInvoice, amount: e.target.value})} placeholder="0.00" />
+                  </div>
+                  <div className="form-group">
+                    <label>Description (Optional)</label>
+                    <input type="text" value={newInvoice.description} onChange={e => setNewInvoice({...newInvoice, description: e.target.value})} placeholder="Custom text for PDF Invoice..." />
+                  </div>
+                </>
+              )}
+
               <div className="form-group">
                 <label>Date Received</label>
                 <input type="date" required value={newInvoice.date} onChange={e => setNewInvoice({...newInvoice, date: e.target.value})} />
@@ -306,20 +390,22 @@ const ProjectDetail = () => {
                   ]}
                 />
               </div>
-              <div className="form-group">
-                <label>Payment Type</label>
-                <CustomSelect 
-                  required
-                  value={newInvoice.payment_type} 
-                  onChange={val => setNewInvoice({...newInvoice, payment_type: val})} 
-                  options={[
-                    { value: 'ADVANCE', label: 'Advance Payment' },
-                    { value: 'PARTIAL', label: 'Partial Payment' },
-                    { value: 'FULL', label: 'Full Payment' },
-                    { value: 'RENEWAL', label: 'Renewal / AMC' }
-                  ]}
-                />
-              </div>
+              {project.project_type !== 'REVENUE_SHARE' && (
+                <div className="form-group">
+                  <label>Payment Type</label>
+                  <CustomSelect 
+                    required
+                    value={newInvoice.payment_type} 
+                    onChange={val => setNewInvoice({...newInvoice, payment_type: val})} 
+                    options={[
+                      { value: 'ADVANCE', label: 'Advance Payment' },
+                      { value: 'PARTIAL', label: 'Partial Payment' },
+                      { value: 'FULL', label: 'Full Payment' },
+                      { value: 'RENEWAL', label: 'Renewal / AMC' }
+                    ]}
+                  />
+                </div>
+              )}
               {newInvoice.status === 'PAID' && (
                 <div className="form-group">
                   <label>Deposit Bank Account</label>
@@ -333,10 +419,26 @@ const ProjectDetail = () => {
                 </div>
               )}
             </div>
+            
+            {project.project_type === 'REVENUE_SHARE' && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Calculated INR Amount to be Logged:</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                  {project.revenue_share_type === 'PROFIT_SHARE' 
+                    ? formatCurrency((parseFloat(rsInputUsd || 0) * usdRate) * (parseFloat(project.revenue_share_percentage || 0) / 100))
+                    : formatCurrency((parseInt(rsSeats || 0) * parseFloat(project.per_seat_cost || 0) * usdRate) * (parseFloat(project.revenue_share_percentage || 0) / 100))}
+                </div>
+              </div>
+            )}
+
             <div className="premium-form-actions">
               <button type="button" className="btn" onClick={resetInvoiceForm}>Cancel</button>
               <button type="submit" className="btn btn-primary" style={{ background: 'var(--success)' }}>
-                <Download size={18} /> Save & Generate PDF
+                {project.project_type === 'REVENUE_SHARE' ? (
+                  <><CheckCircle size={18} /> Save Ledger Entry</>
+                ) : (
+                  <><Download size={18} /> Save & Generate PDF</>
+                )}
               </button>
             </div>
           </form>
@@ -365,9 +467,11 @@ const ProjectDetail = () => {
                   </td>
                   <td data-label="Actions">
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button onClick={() => handleDownloadPDF(inv.id)} title="Download PDF" className="btn" style={{ padding: '0.25rem', color: 'var(--success)', background: 'transparent', display: 'flex', alignItems: 'center' }}>
-                        <FileText size={16}/>
-                      </button>
+                      {project.project_type !== 'REVENUE_SHARE' && (
+                        <button onClick={() => handleDownloadPDF(inv.id)} title="Download PDF" className="btn" style={{ padding: '0.25rem', color: 'var(--success)', background: 'transparent', display: 'flex', alignItems: 'center' }}>
+                          <FileText size={16}/>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

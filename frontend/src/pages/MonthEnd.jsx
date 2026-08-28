@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 import { Lock, Unlock, FileText, X, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 const MonthEnd = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const { user } = useContext(AuthContext);
   const [months, setMonths] = useState([]);
   const [locks, setLocks] = useState({});
@@ -65,7 +70,7 @@ const MonthEnd = () => {
       fetchLocks();
     } catch (err) {
       console.error("Failed to toggle lock", err);
-      alert("Error toggling month lock.");
+      toast.error("Error toggling month lock.");
     }
   };
 
@@ -77,7 +82,7 @@ const MonthEnd = () => {
       setSelectedSummary({ ...res.data, label });
     } catch (err) {
       console.error("Failed to fetch summary", err);
-      alert("Error fetching monthly summary.");
+      toast.error("Error fetching monthly summary.");
       setShowModal(false);
     } finally {
       setLoadingSummary(false);

@@ -144,7 +144,7 @@ const Dashboard = () => {
   // CHART DATA MEMOIZATION
   // --------------------------------------------------------
   
-  // Cash Flow Trend (All-Time Data, sliced to last 3 months)
+  // Cash Flow Trend (All-Time Data, sliced to last 12 months)
   const cashFlowData = useMemo(() => {
     const dataMap = {};
     const processDate = (dateStr, amount, type) => {
@@ -159,7 +159,7 @@ const Dashboard = () => {
     invoices.filter(i => i.status === 'PAID').forEach(i => processDate(i.date, i.amount, 'Income'));
     expenses.forEach(e => processDate(e.date, e.amount, 'Expenses'));
 
-    return Object.values(dataMap).sort((a, b) => a.sortVal - b.sortVal).slice(-3); // Last 3 months
+    return Object.values(dataMap).sort((a, b) => a.sortVal - b.sortVal).slice(-12); // Last 12 months
   }, [invoices, expenses]);
 
   // Expense Donut Chart (Filtered by Date Picker)
@@ -296,9 +296,9 @@ const Dashboard = () => {
       {/* CHARTS SECTION */}
       <div className="dashboard-content-grid">
         
-        {/* Cash Flow Chart (Always 3 Months) */}
+        {/* Cash Flow Chart (Always 12 Months) */}
         <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ margin: '0 0 1.5rem 0' }}>Cash Flow Trend (Last 3 Months)</h3>
+          <h3 style={{ margin: '0 0 1.5rem 0' }}>Cash Flow Trend (Last 12 Months)</h3>
           <div style={{ height: 300, width: '100%' }}>
             <ResponsiveContainer>
               <LineChart data={cashFlowData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>

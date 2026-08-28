@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { Users as UsersIcon, Plus, Edit2, Trash2, X, Shield } from 'lucide-react';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
 
 const Users = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const { user } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +38,7 @@ const Users = () => {
       setUsers(res.data);
     } catch (err) {
       console.error(err);
-      alert('Failed to load users');
+      toast.error('Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -54,16 +59,16 @@ const Users = () => {
 
   const handleDeleteUser = async (id) => {
     if (id === user.id) {
-      alert("You cannot delete yourself!");
+      toast.error("You cannot delete yourself!");
       return;
     }
-    if (window.confirm("Are you sure you want to delete this user? They will lose all access.")) {
+    if (await confirm("Are you sure you want to delete this user? They will lose all access.")) {
       try {
         await api.delete(`users/${id}/`);
         fetchUsers();
       } catch (err) {
         console.error(err);
-        alert('Failed to delete user');
+        toast.error('Failed to delete user');
       }
     }
   };
@@ -88,7 +93,7 @@ const Users = () => {
       fetchUsers();
     } catch (err) {
       console.error(err);
-      alert('Failed to save user. Make sure the username/email is unique.');
+      toast.error('Failed to save user. Make sure the username/email is unique.');
     }
   };
 

@@ -133,18 +133,29 @@ def generate_invoice_pdf(invoice):
     
     styles = getSampleStyleSheet()
     normal = styles['Normal']
+    normal.fontName = 'Helvetica'
     normal.fontSize = 9
     normal.leading = 12
+    normal.textColor = colors.HexColor("#0a192f") # Deep navy blue like logo
+    
+    # Pre-calculate project cost for line items
+    project = invoice.project
+    enhancements_total = sum(e.cost for e in project.enhancements.all()) if project else 0
+    total_project_cost = project.total_value + enhancements_total if project else invoice.amount
     
     # ---------------- RIGHT SIDE FLOWABLES ----------------
+    
+    elements.append(Spacer(1, 20)) # Add padding above heading
     
     # INVOICE TITLE
     title_style = ParagraphStyle(
         'InvoiceTitle',
         parent=styles['Heading1'],
-        fontSize=28,
-        textColor=colors.HexColor("#ef4444"), # Vibrant red matching the layout idea
-        spaceAfter=15,
+        fontName='Helvetica-Bold',
+        fontSize=26,
+        textColor=colors.HexColor("#1e3a8a"), # Blue like logo
+        spaceBefore=10,
+        spaceAfter=30, # Increased padding
         alignment=0 # Left aligned in the remaining space
     )
     
@@ -162,11 +173,12 @@ def generate_invoice_pdf(invoice):
     meta_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#0a192f")),
     ]))
     elements.append(meta_table)
-    elements.append(Spacer(1, 40))
+    elements.append(Spacer(1, 30))
     
     # LINE ITEMS TABLE
     FLOWABLE_WIDTH = PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN
@@ -179,14 +191,16 @@ def generate_invoice_pdf(invoice):
     if invoice.description:
         desc = invoice.description.replace('\n', '<br/>')
     else:
-        desc = f"Payment for Project: <b>{invoice.project.name}</b><br/>Type: {invoice.project.project_type}"
-    data.append(["1", Paragraph(desc, normal), f"Rs. {invoice.amount:,.2f}"])
+        desc = f"Payment for Project: <b>{invoice.project.name if invoice.project else 'N/A'}</b><br/>Type: {invoice.project.project_type if invoice.project else 'N/A'}"
+    
+    # Show full project cost in the item description amount
+    data.append(["1", Paragraph(desc, normal), f"Rs. {total_project_cost:,.2f}"])
     
     table = Table(data, colWidths=col_widths)
     
     t_style = TableStyle([
-        # Header styles (Transparent background, just text)
-        ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+        # Header styles
+        ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#0a192f")),
         ('ALIGN', (0,0), (-1,0), 'LEFT'),
         ('ALIGN', (2,0), (2,0), 'RIGHT'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
@@ -195,7 +209,7 @@ def generate_invoice_pdf(invoice):
         ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor("#e2e8f0")),
         
         # Row styles
-        ('TEXTCOLOR', (0,1), (-1,-1), colors.HexColor("#475569")),
+        ('TEXTCOLOR', (0,1), (-1,-1), colors.HexColor("#0a192f")),
         ('ALIGN', (0,1), (-1,-1), 'LEFT'),
         ('ALIGN', (2,1), (2,-1), 'RIGHT'),
         ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
@@ -222,7 +236,8 @@ def generate_invoice_pdf(invoice):
         ('FONTNAME', (0,0), (0,1), 'Helvetica-Bold'),
         ('FONTNAME', (1,0), (1,1), 'Helvetica'),
         ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
-        ('TEXTCOLOR', (0,-1), (-1,-1), colors.HexColor("#ef4444")), # Red total
+        ('TEXTCOLOR', (0,0), (-1,1), colors.HexColor("#0a192f")), # Default blue text
+        ('TEXTCOLOR', (0,-1), (-1,-1), colors.HexColor("#1e3a8a")), # Darker blue total instead of red
         ('FONTSIZE', (0,-1), (-1,-1), 12),
         ('TOPPADDING', (0,0), (-1,-1), 6),
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
@@ -233,44 +248,42 @@ def generate_invoice_pdf(invoice):
     
     # PROJECT SUMMARY
     elements.append(Spacer(1, 20))
-    project = invoice.project
-    enhancements_total = sum(e.cost for e in project.enhancements.all())
-    total_project_cost = project.total_value + enhancements_total
     
-    amount_billed = sum(inv.amount for inv in project.invoices.filter(status__in=['PAID', 'SENT']))
-    if invoice.status == 'DRAFT' and not invoice.pk:
-        amount_billed += invoice.amount # Add if not saved yet
-    elif invoice.status == 'DRAFT' and invoice.pk:
-        # If it's saved as DRAFT, add its amount manually since filter above excludes DRAFTs
-        amount_billed += invoice.amount
-        
-    remaining_balance = total_project_cost - amount_billed
-
-    summary_data = [
-        ['Project Summary', ''],
-        ['Total Project Cost:', f"Rs. {total_project_cost:,.2f}"],
-        ['Amount Billed to Date:', f"Rs. {amount_billed:,.2f}"],
-        ['Remaining Balance:', f"Rs. {remaining_balance:,.2f}"]
-    ]
-    summary_table = Table(summary_data, colWidths=[FLOWABLE_WIDTH * 0.6, FLOWABLE_WIDTH * 0.4])
-    summary_table.setStyle(TableStyle([
-        ('SPAN', (0,0), (1,0)),
-        ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#1e3a8a")),
-        ('FONTSIZE', (0,0), (-1,0), 10),
-        ('BOTTOMPADDING', (0,0), (-1,0), 6),
-        
-        ('ALIGN', (0,1), (0,-1), 'RIGHT'),
-        ('ALIGN', (1,1), (1,-1), 'RIGHT'),
-        ('FONTNAME', (0,1), (1,-2), 'Helvetica'),
-        ('FONTNAME', (0,-1), (1,-1), 'Helvetica-Bold'),
-        ('TEXTCOLOR', (0,-1), (-1,-1), colors.HexColor("#10b981")), # Green balance
-        ('FONTSIZE', (0,1), (-1,-1), 9),
-        ('TOPPADDING', (0,1), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 4),
-    ]))
-    elements.append(summary_table)
+    if project:
+        amount_billed = sum(inv.amount for inv in project.invoices.filter(status__in=['PAID', 'SENT']))
+        if invoice.status == 'DRAFT' and not invoice.pk:
+            amount_billed += invoice.amount
+        elif invoice.status == 'DRAFT' and invoice.pk:
+            amount_billed += invoice.amount
+            
+        remaining_balance = total_project_cost - amount_billed
+    
+        summary_data = [
+            ['Project Summary', ''],
+            ['Total Project Cost:', f"Rs. {total_project_cost:,.2f}"],
+            ['Amount Billed to Date:', f"Rs. {amount_billed:,.2f}"],
+            ['Remaining Balance:', f"Rs. {remaining_balance:,.2f}"]
+        ]
+        summary_table = Table(summary_data, colWidths=[FLOWABLE_WIDTH * 0.6, FLOWABLE_WIDTH * 0.4])
+        summary_table.setStyle(TableStyle([
+            ('SPAN', (0,0), (1,0)),
+            ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#1e3a8a")),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('BOTTOMPADDING', (0,0), (-1,0), 6),
+            
+            ('ALIGN', (0,1), (0,-1), 'RIGHT'),
+            ('ALIGN', (1,1), (1,-1), 'RIGHT'),
+            ('FONTNAME', (0,1), (1,-2), 'Helvetica'),
+            ('FONTNAME', (0,-1), (1,-1), 'Helvetica-Bold'),
+            ('TEXTCOLOR', (0,1), (-1,-2), colors.HexColor("#0a192f")),
+            ('TEXTCOLOR', (0,-1), (-1,-1), colors.HexColor("#1e3a8a")), # Balance in blue
+            ('FONTSIZE', (0,1), (-1,-1), 9),
+            ('TOPPADDING', (0,1), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 4),
+        ]))
+        elements.append(summary_table)
     
     # FOOTER & SIGNATURE
     elements.append(Spacer(1, 60))

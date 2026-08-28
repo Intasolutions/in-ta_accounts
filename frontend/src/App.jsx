@@ -49,16 +49,23 @@ const MainApp = () => {
   );
 };
 
+import { ToastProvider } from './context/ToastContext';
+import { ConfirmProvider } from './context/ConfirmContext';
+
 function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   return (
     <AuthProvider>
-      {showSplash ? (
-        <SplashScreen onComplete={() => setShowSplash(false)} />
-      ) : (
-        <MainApp />
-      )}
+      <ToastProvider>
+        <ConfirmProvider>
+          {showSplash ? (
+            <SplashScreen onComplete={() => setShowSplash(false)} />
+          ) : (
+            <MainApp />
+          )}
+        </ConfirmProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }
