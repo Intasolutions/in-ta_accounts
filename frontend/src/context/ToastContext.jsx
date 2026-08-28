@@ -37,7 +37,7 @@ export const ToastProvider = ({ children }) => {
           {toasts.map(toast => (
             <div 
               key={toast.id} 
-              className={	oast toast- + toast.type +   + (toast.isClosing ? 'toast-closing' : '')}
+              className={`toast toast-${toast.type} ${toast.isClosing ? 'toast-closing' : ''}`}
             >
               <div className="toast-icon">
                 {toast.type === 'success' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
