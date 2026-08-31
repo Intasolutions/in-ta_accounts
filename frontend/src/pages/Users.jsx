@@ -97,8 +97,8 @@ const Users = () => {
     }
   };
 
-  if (!user || user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN') {
-    return <div style={{ padding: '2rem' }}>Access Denied. Only Owners can manage users.</div>;
+  if (!user || user.role !== 'ACCOUNTANT') {
+    return <div style={{ padding: '2rem' }}>Access Denied. Only Accountants can manage users.</div>;
   }
 
   if (loading) return <div style={{ padding: '2rem' }}>Loading Users...</div>;
@@ -159,8 +159,8 @@ const Users = () => {
                   value={newUser.role} 
                   onChange={val => setNewUser({...newUser, role: val})} 
                   options={[
-                    { value: 'ACCOUNTANT', label: 'Accountant' },
-                    { value: 'OWNER', label: 'Owner (Full Access)' }
+                    { value: 'ACCOUNTANT', label: 'Accountant (Super Admin)' },
+                    { value: 'OWNER', label: 'Owner (View & Expenses Only)' }
                   ]}
                 />
               </div>

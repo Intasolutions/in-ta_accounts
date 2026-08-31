@@ -51,7 +51,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               </NavLink>
             </li>
           )}
-          {(user?.role === 'SUPER_ADMIN' || user?.role === 'ACCOUNTANT') && (
+          {user?.role === 'ACCOUNTANT' && (
             <li>
               <NavLink to="/users" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
                 <Users size={20} /> Team / Users

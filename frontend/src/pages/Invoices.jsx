@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import { FileText, Plus, Edit2, Trash2, Download, X, Copy, ExternalLink, Calendar } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
@@ -11,6 +12,7 @@ import CustomSelect from '../components/CustomSelect';
 const Invoices = () => {
   const toast = useToast();
   const confirm = useConfirm();
+  const { user } = React.useContext(AuthContext);
 
   const [invoices, setInvoices] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -151,9 +153,11 @@ const Invoices = () => {
           </div>
           <div className="action-bar-right">
             <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by client, project or ID..." />
-            <button className="btn btn-primary" onClick={() => { if (showForm) { resetForm(); } else { resetForm(); setShowForm(true); } }}>
-              {showForm ? <X size={18} /> : <><Plus size={18} /> Generate Invoice</>}
-            </button>
+            {user?.role === 'ACCOUNTANT' && (
+              <button className="btn btn-primary" onClick={() => { if (showForm) { resetForm(); } else { resetForm(); setShowForm(true); } }}>
+                {showForm ? <X size={18} /> : <><Plus size={18} /> Generate Invoice</>}
+              </button>
+            )}
           </div>
         </div>
 
@@ -263,8 +267,12 @@ const Invoices = () => {
                       <button onClick={() => handleDownloadPDF(inv.id)} title="Download PDF" className="btn" style={{ padding: '0.25rem', color: 'var(--success)', background: 'transparent', display: 'flex', alignItems: 'center' }}>
                         <FileText size={16}/>
                       </button>
-                      <button className="btn" onClick={() => handleEditInvoice(inv)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }}><Edit2 size={16}/></button>
-                      <button className="btn" onClick={() => handleDeleteInvoice(inv.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16}/></button>
+                      {user?.role === 'ACCOUNTANT' && (
+                        <>
+                          <button className="btn" onClick={() => handleEditInvoice(inv)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }}><Edit2 size={16}/></button>
+                          <button className="btn" onClick={() => handleDeleteInvoice(inv.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16}/></button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

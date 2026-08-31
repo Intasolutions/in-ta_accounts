@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import { Landmark, Plus, Share2, Wallet, Edit2, Trash2, X, ArrowRightLeft, List } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
@@ -11,6 +12,7 @@ import CustomSelect from '../components/CustomSelect';
 const Banking = () => {
   const toast = useToast();
   const confirm = useConfirm();
+  const { user } = React.useContext(AuthContext);
 
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -159,17 +161,21 @@ const Banking = () => {
           {/* Optionally empty or title */}
         </div>
         <div className="action-bar-right">
-          <button className="btn" onClick={() => {setShowTransferForm(!showTransferForm); setShowForm(false);}} style={{ background: 'var(--info)', color: '#fff' }}>
-            <ArrowRightLeft size={18} /> Internal Transfer
-          </button>
-          <button className="btn btn-primary" onClick={() => {
-            const willShow = !showForm;
-            resetForm();
-            setShowForm(willShow);
-            setShowTransferForm(false);
-          }}>
-            {showForm ? <X size={18} /> : <><Plus size={18} /> Add Account</>}
-          </button>
+          {user?.role === 'ACCOUNTANT' && (
+            <>
+              <button className="btn" onClick={() => {setShowTransferForm(!showTransferForm); setShowForm(false);}} style={{ background: 'var(--info)', color: '#fff' }}>
+                <ArrowRightLeft size={18} /> Internal Transfer
+              </button>
+              <button className="btn btn-primary" onClick={() => {
+                const willShow = !showForm;
+                resetForm();
+                setShowForm(willShow);
+                setShowTransferForm(false);
+              }}>
+                {showForm ? <X size={18} /> : <><Plus size={18} /> Add Account</>}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -262,8 +268,12 @@ const Banking = () => {
                 {acc.bank_name && <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{acc.bank_name}</p>}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn" onClick={() => handleEditAccount(acc)} style={{ padding: '0.25rem', color: 'var(--text-muted)', background: 'transparent' }}><Edit2 size={16}/></button>
-                <button className="btn" onClick={() => handleDeleteAccount(acc.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16}/></button>
+                {user?.role === 'ACCOUNTANT' && (
+                  <>
+                    <button className="btn" onClick={() => handleEditAccount(acc)} style={{ padding: '0.25rem', color: 'var(--text-muted)', background: 'transparent' }}><Edit2 size={16}/></button>
+                    <button className="btn" onClick={() => handleDeleteAccount(acc.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16}/></button>
+                  </>
+                )}
               </div>
             </div>
 

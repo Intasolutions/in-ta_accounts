@@ -186,7 +186,7 @@ const OwnerDrawings = () => {
                   </td>
                   <td data-label="Funded From">{draw.source_bank_name || '-'}</td>
                   <td data-label="Actions">
-                    {draw.status === 'PENDING' && (user.role === 'OWNER' || user.role === 'ACCOUNTANT') && (
+                    {draw.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
                       approvingId === draw.id ? (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
                           <CustomSelect 

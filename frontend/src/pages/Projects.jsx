@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { Plus, Building2, Briefcase, Edit2, Trash2, X } from 'lucide-react';
@@ -12,6 +13,7 @@ import CustomSelect from '../components/CustomSelect';
 const Projects = () => {
   const toast = useToast();
   const confirm = useConfirm();
+  const { user } = React.useContext(AuthContext);
 
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -241,9 +243,11 @@ const Projects = () => {
               </div>
               <div className="action-bar-right">
                 <SearchBar value={clientSearch} onChange={setClientSearch} placeholder="Search clients by name or company..." />
-                <button className="btn btn-primary" onClick={() => { if (showClientForm) { resetClientForm(); } else { resetClientForm(); setShowClientForm(true); } }}>
-                  {showClientForm ? <X size={18} /> : <><Plus size={18} /> New Client</>}
-                </button>
+                {user?.role === 'ACCOUNTANT' && (
+                  <button className="btn btn-primary" onClick={() => { if (showClientForm) { resetClientForm(); } else { resetClientForm(); setShowClientForm(true); } }}>
+                    {showClientForm ? <X size={18} /> : <><Plus size={18} /> New Client</>}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -299,8 +303,12 @@ const Projects = () => {
                       <td data-label="Created">{new Date(c.created_at).toLocaleDateString()}</td>
                       <td data-label="Actions">
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button className="btn" onClick={() => handleEditClient(c)} style={{ padding: '0.5rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)' }} title="Edit"><Edit2 size={16}/></button>
-                          <button className="btn" onClick={() => handleDeleteClient(c.id)} style={{ padding: '0.5rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)' }} title="Delete"><Trash2 size={16}/></button>
+                          {user?.role === 'ACCOUNTANT' && (
+                            <>
+                              <button className="btn" onClick={() => handleEditClient(c)} style={{ padding: '0.5rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)' }} title="Edit"><Edit2 size={16}/></button>
+                              <button className="btn" onClick={() => handleDeleteClient(c.id)} style={{ padding: '0.5rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)' }} title="Delete"><Trash2 size={16}/></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -322,9 +330,11 @@ const Projects = () => {
               </div>
               <div className="action-bar-right">
                 <SearchBar value={projectSearch} onChange={setProjectSearch} placeholder="Search projects by name or client..." />
-                <button className="btn btn-primary" onClick={() => { if (showProjectForm) { resetProjectForm(); } else { resetProjectForm(); setShowProjectForm(true); } }}>
-                  {showProjectForm ? <X size={18} /> : <><Plus size={18} /> New Project</>}
-                </button>
+                {user?.role === 'ACCOUNTANT' && (
+                  <button className="btn btn-primary" onClick={() => { if (showProjectForm) { resetProjectForm(); } else { resetProjectForm(); setShowProjectForm(true); } }}>
+                    {showProjectForm ? <X size={18} /> : <><Plus size={18} /> New Project</>}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -431,8 +441,12 @@ const Projects = () => {
                           <Link to={`/projects/${p.id}`} className="btn" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', background: 'var(--primary-color)', color: '#fff', borderRadius: '4px', textDecoration: 'none' }}>
                             Manage Details
                           </Link>
-                          <button className="btn" onClick={() => handleEditProject(p)} style={{ padding: '0.4rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '4px' }} title="Edit"><Edit2 size={16}/></button>
-                          <button className="btn" onClick={() => handleDeleteProject(p.id)} style={{ padding: '0.4rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px' }} title="Delete"><Trash2 size={16}/></button>
+                          {user?.role === 'ACCOUNTANT' && (
+                            <>
+                              <button className="btn" onClick={() => handleEditProject(p)} style={{ padding: '0.4rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '4px' }} title="Edit"><Edit2 size={16}/></button>
+                              <button className="btn" onClick={() => handleDeleteProject(p.id)} style={{ padding: '0.4rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px' }} title="Delete"><Trash2 size={16}/></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
