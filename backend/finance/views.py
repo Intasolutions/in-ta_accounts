@@ -210,6 +210,12 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
     queryset = AdvanceRequest.objects.all()
     serializer_class = AdvanceRequestSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.role == 'OWNER':
+            return AdvanceRequest.objects.filter(requested_by=user)
+        return AdvanceRequest.objects.all()
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         adv_request = self.get_object()
@@ -259,6 +265,12 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
 class CompanyExpenseViewSet(viewsets.ModelViewSet):
     queryset = CompanyExpense.objects.all()
     serializer_class = CompanyExpenseSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.role == 'OWNER':
+            return CompanyExpense.objects.filter(logged_by=user)
+        return CompanyExpense.objects.all()
 
     def perform_create(self, serializer):
         receipt_file = serializer.validated_data.pop('receipt_file', None)
@@ -390,6 +402,12 @@ class RenewalViewSet(viewsets.ModelViewSet):
 class OwnerDrawViewSet(viewsets.ModelViewSet):
     queryset = OwnerDraw.objects.all().order_by('-date')
     serializer_class = OwnerDrawSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.role == 'OWNER':
+            return OwnerDraw.objects.filter(owner=user).order_by('-date')
+        return OwnerDraw.objects.all().order_by('-date')
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
