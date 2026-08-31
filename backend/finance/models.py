@@ -76,6 +76,18 @@ class Project(models.Model):
     def __str__(self):
         return f"{self.client.name} - {self.name}"
 
+class RevenueShareScope(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='revenue_share_scopes')
+    name = models.CharField(max_length=255, help_text="e.g. MBBS, Nursing")
+    share_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    cost = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Cost per seat or target cost")
+
+    class Meta:
+        ordering = ['-id']
+
+    def __str__(self):
+        return f"{self.name} - {self.project.name}"
+
 class Enhancement(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='enhancements')
     title = models.CharField(max_length=255)
@@ -126,6 +138,7 @@ class Invoice(models.Model):
     # For Revenue Share tracking
     revenue_share_base_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Total profit pool for the month (USD/INR)")
     revenue_share_seats_sold = models.IntegerField(null=True, blank=True, help_text="Number of seats sold")
+    revenue_share_scope = models.ForeignKey(RevenueShareScope, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
 
     class Meta:
         ordering = ['-id']

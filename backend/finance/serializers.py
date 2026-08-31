@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw
+from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, RevenueShareScope
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
@@ -68,6 +68,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = '__all__'
 
+class RevenueShareScopeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RevenueShareScope
+        fields = '__all__'
 
 class ProjectSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.name', read_only=True)
@@ -75,6 +79,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     renewals = RenewalSerializer(many=True, read_only=True)
     expenses = CompanyExpenseSerializer(many=True, read_only=True)
     invoices = InvoiceSerializer(many=True, read_only=True)
+    revenue_share_scopes = RevenueShareScopeSerializer(many=True, read_only=True)
     
     total_project_value = serializers.SerializerMethodField()
     amount_received = serializers.SerializerMethodField()

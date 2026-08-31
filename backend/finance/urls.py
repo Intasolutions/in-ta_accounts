@@ -4,7 +4,7 @@ from .views import (
     UserViewSet, ClientViewSet, ProjectViewSet, 
     InvoiceViewSet, AdvanceWalletViewSet, AdvanceRequestViewSet, CompanyExpenseViewSet, MonthLockViewSet,
     EnhancementViewSet, RenewalViewSet, BankAccountViewSet, TransactionViewSet, OwnerDrawViewSet,
-    PasswordResetDirectView, CheckEmailView
+    PasswordResetDirectView, CheckEmailView, RevenueShareScopeViewSet
 )
 
 router = DefaultRouter()
@@ -13,6 +13,7 @@ router.register(r'bank-accounts', BankAccountViewSet)
 router.register(r'clients', ClientViewSet)
 router.register(r'projects', ProjectViewSet)
 router.register(r'invoices', InvoiceViewSet)
+router.register(r'revenue-share-scopes', RevenueShareScopeViewSet)
 router.register(r'advance-wallets', AdvanceWalletViewSet)
 router.register(r'advance-requests', AdvanceRequestViewSet)
 router.register(r'company-expenses', CompanyExpenseViewSet)

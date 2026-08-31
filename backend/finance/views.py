@@ -8,11 +8,11 @@ from django.http import HttpResponse
 from decimal import Decimal
 from django.core.mail import send_mail
 from django.db.models import Sum
-from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw
+from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, RevenueShareScope
 from .serializers import (
     UserSerializer, ClientSerializer, ProjectSerializer, 
     InvoiceSerializer, AdvanceWalletSerializer, AdvanceRequestSerializer, CompanyExpenseSerializer, MonthLockSerializer,
-    EnhancementSerializer, RenewalSerializer, BankAccountSerializer, TransactionSerializer, OwnerDrawSerializer
+    EnhancementSerializer, RenewalSerializer, BankAccountSerializer, TransactionSerializer, OwnerDrawSerializer, RevenueShareScopeSerializer
 )
 from .utils.invoice_generator import generate_invoice_pdf
 
@@ -108,6 +108,10 @@ class ClientViewSet(viewsets.ModelViewSet):
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+class RevenueShareScopeViewSet(viewsets.ModelViewSet):
+    queryset = RevenueShareScope.objects.all()
+    serializer_class = RevenueShareScopeSerializer
 
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()

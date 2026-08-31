@@ -6,7 +6,21 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
+    const loginTime = sessionStorage.getItem('login_timestamp');
+    
+    if (loginTime) {
+      const now = new Date().getTime();
+      const sixHours = 6 * 60 * 60 * 1000;
+      if (now - parseInt(loginTime, 10) >= sixHours) {
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('login_timestamp');
+        window.location.href = '/login';
+        return Promise.reject(new Error('Session expired'));
+      }
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -56,16 +70,16 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = sessionStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
           const { data } = await axios.post(api.defaults.baseURL + 'token/refresh/', {
             refresh: refreshToken
           });
           
-          localStorage.setItem('access_token', data.access);
+          sessionStorage.setItem('access_token', data.access);
           if (data.refresh) {
-            localStorage.setItem('refresh_token', data.refresh);
+            sessionStorage.setItem('refresh_token', data.refresh);
           }
           
           api.defaults.headers.common.Authorization = 'Bearer ' + data.access;
@@ -75,16 +89,18 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch (err) {
           processQueue(err, null);
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          sessionStorage.removeItem('access_token');
+          sessionStorage.removeItem('refresh_token');
+          sessionStorage.removeItem('login_timestamp');
           window.location.href = '/login';
           return Promise.reject(err);
         } finally {
           isRefreshing = false;
         }
       } else {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('login_timestamp');
         window.location.href = '/login';
       }
     }
