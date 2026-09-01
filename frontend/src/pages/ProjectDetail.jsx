@@ -364,18 +364,14 @@ const ProjectDetail = () => {
             )}
           </div>
         )}
-        {project.project_type === 'REVENUE_SHARE' && (
-          <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--danger)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Total Expenses</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(totalExpenses)}</div>
-          </div>
-        )}
-        {project.project_type === 'REVENUE_SHARE' && (
-          <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--primary-color)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Net Profit</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{formatCurrency(amountReceived - totalExpenses)}</div>
-          </div>
-        )}
+        <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--danger)' }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Total Expenses</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(totalExpenses)}</div>
+        </div>
+        <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--primary-color)' }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Net Profit</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{formatCurrency(amountReceived - totalExpenses)}</div>
+        </div>
       </div>
 
       {/* Payments & Invoices */}

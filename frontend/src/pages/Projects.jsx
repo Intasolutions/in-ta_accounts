@@ -116,6 +116,9 @@ const Projects = () => {
     try {
       const payload = { ...newProject };
       if (!payload.delivery_date) delete payload.delivery_date;
+      if (payload.amc_percentage === '') payload.amc_percentage = null;
+      if (!payload.total_value) payload.total_value = '0.00';
+      
       if (payload.project_type !== 'REVENUE_SHARE') {
         delete payload.revenue_share_type;
         delete payload.revenue_share_percentage;
