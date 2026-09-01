@@ -91,6 +91,8 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def get_total_project_value(self, obj):
         enhancement_total = sum(e.cost for e in obj.enhancements.all())
+        if obj.project_type == 'REVENUE_SHARE':
+            return sum(i.amount for i in obj.invoices.all())
         return obj.total_value + enhancement_total
 
     def get_amount_received(self, obj):

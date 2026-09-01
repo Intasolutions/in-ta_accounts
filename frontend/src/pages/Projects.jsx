@@ -394,18 +394,22 @@ const Projects = () => {
                       )}
                     </>
                   )}
-                  <div className="form-group">
-                    <label>Base / Total Value (₹) {newProject.project_type === 'REVENUE_SHARE' && '(Optional for RS)'}</label>
-                    <input type="number" required={newProject.project_type !== 'REVENUE_SHARE'} value={newProject.total_value} onChange={e => setNewProject({...newProject, total_value: e.target.value})} placeholder="0.00" />
-                  </div>
-                  <div className="form-group">
-                    <label>AMC % (if applicable)</label>
-                    <input type="number" step="0.01" value={newProject.amc_percentage} onChange={e => setNewProject({...newProject, amc_percentage: e.target.value})} placeholder="e.g. 15" />
-                  </div>
-                  <div className="form-group">
-                    <label>Delivery Date (Optional)</label>
-                    <input type="date" value={newProject.delivery_date} onChange={e => setNewProject({...newProject, delivery_date: e.target.value})} />
-                  </div>
+                  {newProject.project_type !== 'REVENUE_SHARE' && (
+                    <>
+                      <div className="form-group">
+                        <label>Base / Total Value (₹)</label>
+                        <input type="number" required value={newProject.total_value} onChange={e => setNewProject({...newProject, total_value: e.target.value})} placeholder="0.00" />
+                      </div>
+                      <div className="form-group">
+                        <label>AMC % (if applicable)</label>
+                        <input type="number" step="0.01" value={newProject.amc_percentage} onChange={e => setNewProject({...newProject, amc_percentage: e.target.value})} placeholder="e.g. 15" />
+                      </div>
+                      <div className="form-group">
+                        <label>Delivery Date (Optional)</label>
+                        <input type="date" value={newProject.delivery_date} onChange={e => setNewProject({...newProject, delivery_date: e.target.value})} />
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="premium-form-actions">
                   <button type="button" className="btn" onClick={() => setShowProjectForm(false)}>Cancel</button>
@@ -420,7 +424,7 @@ const Projects = () => {
                   <tr>
                     <th>Project Name</th>
                     <th>Client</th>
-                    <th>Base Value</th>
+                    <th>Value / Type</th>
                     <th>Created</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -430,7 +434,9 @@ const Projects = () => {
                     <tr key={p.id}>
                       <td className="strong" data-label="Project Name">{p.name}</td>
                       <td data-label="Client">{p.client_name}</td>
-                      <td className="strong" style={{ color: 'var(--success)' }} data-label="Base Value">{formatCurrency(p.total_value)}</td>
+                      <td className="strong" style={{ color: p.project_type === 'REVENUE_SHARE' ? 'var(--info)' : 'var(--success)' }} data-label="Value / Type">
+                        {p.project_type === 'REVENUE_SHARE' ? 'Revenue Share' : formatCurrency(p.total_value)}
+                      </td>
                       <td data-label="Created">{new Date(p.created_at).toLocaleDateString()}</td>
                       <td data-label="Actions">
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>

@@ -346,22 +346,36 @@ const ProjectDetail = () => {
           <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(totalProjectValue)}</div>
         </div>
         <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--success)' }}>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Amount Received</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{project.project_type === 'REVENUE_SHARE' ? 'Total Revenue Earned' : 'Amount Received'}</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success)' }}>{formatCurrency(amountReceived)}</div>
         </div>
         <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--danger)' }}>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Balance Due</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(balanceDue)}</div>
         </div>
-        <div className="card" style={{ marginBottom: 0, padding: '1rem' }}>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Annual AMC ({project.amc_percentage}%)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--info)' }}>{formatCurrency(calculatedAMC)}</div>
-          {project.delivery_date && (
-            <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: 'var(--text-muted)' }}>
-              Kicks in 3 mos post: {project.delivery_date}
-            </div>
-          )}
-        </div>
+        {project.project_type !== 'REVENUE_SHARE' && (
+          <div className="card" style={{ marginBottom: 0, padding: '1rem' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Annual AMC ({project.amc_percentage}%)</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--info)' }}>{formatCurrency(calculatedAMC)}</div>
+            {project.delivery_date && (
+              <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: 'var(--text-muted)' }}>
+                Kicks in 3 mos post: {project.delivery_date}
+              </div>
+            )}
+          </div>
+        )}
+        {project.project_type === 'REVENUE_SHARE' && (
+          <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--danger)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Total Expenses</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(totalExpenses)}</div>
+          </div>
+        )}
+        {project.project_type === 'REVENUE_SHARE' && (
+          <div className="card" style={{ marginBottom: 0, padding: '1rem', borderTop: '4px solid var(--primary-color)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Net Profit</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{formatCurrency(amountReceived - totalExpenses)}</div>
+          </div>
+        )}
       </div>
 
       {/* Payments & Invoices */}
