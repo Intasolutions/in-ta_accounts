@@ -34,7 +34,7 @@ class PasswordResetDirectView(APIView):
 
         User = get_user_model()
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
             user.set_password(new_password)
             user.save()
             return Response({'success': 'Password reset successfully.'})
@@ -51,7 +51,7 @@ class CheckEmailView(APIView):
             return Response({'error': 'Email is required.'}, status=400)
             
         User = get_user_model()
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email__iexact=email).exists():
             return Response({'exists': True})
         return Response({'error': 'No account found with this email address.'}, status=404)
 

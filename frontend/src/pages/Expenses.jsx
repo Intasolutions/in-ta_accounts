@@ -25,6 +25,7 @@ const Expenses = () => {
   const [projects, setProjects] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [filter, setFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -95,6 +96,18 @@ const Expenses = () => {
         return;
       }
 
+      if (!newExpense.receipt_file) {
+        if (!newExpense.bill_not_required) {
+          toast.error("Please upload an Invoice/Receipt, or check 'No bill required' for small expenses.");
+          return;
+        }
+        if (parseFloat(newExpense.amount) >= 350) {
+          toast.error("The 'No bill required' option is only for petty expenses under ₹350. Please upload a bill.");
+          return;
+        }
+      }
+
+      setIsSubmitting(true);
       const formData = new FormData();
       formData.append('expense_type', newExpense.expense_type);
       formData.append('payee_description', newExpense.payee_description);
@@ -127,12 +140,15 @@ const Expenses = () => {
         amount: '',
         date: new Date().toISOString().split('T')[0],
         withdrawal_account: '',
-        receipt_file: null
+        receipt_file: null,
+        bill_not_required: false
       });
       fetchData();
     } catch (err) {
       console.error(err);
       toast.error('Failed to save expense');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -146,7 +162,8 @@ const Expenses = () => {
       amount: exp.amount,
       date: exp.date,
       withdrawal_account: exp.withdrawal_account || '',
-      receipt_file: exp.receipt_file // Cannot preload file input, but we keep the URL if needed
+      receipt_file: exp.receipt_drive_link || exp.receipt_file,
+      bill_not_required: false
     });
     setShowExpenseForm(true);
   };
@@ -410,14 +427,30 @@ const Expenses = () => {
                   </div>
                 )}
                 <div className="form-group">
-                  <label>Invoice / Receipt (Optional)</label>
+                  <label>Invoice / Receipt <span style={{color:'var(--danger)'}}>*</span></label>
                   <input type="file" onChange={e => setNewExpense({ ...newExpense, receipt_file: e.target.files[0] })} />
+                  {newExpense.receipt_file && typeof newExpense.receipt_file === 'string' && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '0.25rem' }}>Current bill uploaded</div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    <input 
+                      type="checkbox" 
+                      id="bill_not_required" 
+                      checked={newExpense.bill_not_required || false}
+                      onChange={e => setNewExpense({ ...newExpense, bill_not_required: e.target.checked })}
+                    />
+                    <label htmlFor="bill_not_required" style={{ margin: 0, fontWeight: 'normal', cursor: 'pointer', fontSize: '0.85rem' }}>
+                      No bill required (Small payment like tea/snacks)
+                    </label>
+                  </div>
                 </div>
               </div>
 
               <div className="premium-form-actions">
-                <button type="button" className="btn" onClick={() => setShowExpenseForm(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Submit Expense</button>
+                <button type="button" className="btn" onClick={() => setShowExpenseForm(false)} disabled={isSubmitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Submit Expense'}
+                </button>
               </div>
             </form>
           )}
