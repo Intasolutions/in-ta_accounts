@@ -79,8 +79,7 @@ class Project(models.Model):
 class RevenueShareScope(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='revenue_share_scopes')
     name = models.CharField(max_length=255, help_text="e.g. MBBS, Nursing")
-    share_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    cost = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Cost per seat or target cost")
+    earning = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Flat earning per seat in USD")
 
     class Meta:
         ordering = ['-id']

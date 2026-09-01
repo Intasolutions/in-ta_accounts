@@ -26,6 +26,11 @@ const ProjectDetail = () => {
   const [editingRenewal, setEditingRenewal] = useState(null);
   const [newRenewal, setNewRenewal] = useState({ title: '', cost: '', due_date: '' });
 
+  const [showScopeForm, setShowScopeForm] = useState(false);
+  const [editingScope, setEditingScope] = useState(null);
+  const [newScope, setNewScope] = useState({ name: '', earning: '' });
+  const [selectedScope, setSelectedScope] = useState('');
+
   const [bankAccounts, setBankAccounts] = useState([]);
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [newInvoice, setNewInvoice] = useState({ amount: '', date: new Date().toISOString().split('T')[0], status: 'PAID', deposit_account: '', description: '' });
@@ -155,6 +160,45 @@ const ProjectDetail = () => {
     setShowRenewalForm(false);
   };
 
+  const handleAddScope = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingScope) {
+        await api.put(`revenue-share-scopes/${editingScope}/`, { ...newScope, project: id });
+      } else {
+        await api.post('revenue-share-scopes/', { ...newScope, project: id });
+      }
+      resetScopeForm();
+      fetchProject();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save scope");
+    }
+  };
+
+  const handleEditScope = (scope) => {
+    setEditingScope(scope.id);
+    setNewScope({ name: scope.name, earning: scope.earning });
+    setShowScopeForm(true);
+  };
+
+  const handleDeleteScope = async (scopeId) => {
+    if (await confirm("Are you sure you want to delete this scope?")) {
+      try {
+        await api.delete(`revenue-share-scopes/${scopeId}/`);
+        fetchProject();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const resetScopeForm = () => {
+    setNewScope({ name: '', earning: '' });
+    setEditingScope(null);
+    setShowScopeForm(false);
+  };
+
   const toggleRenewalStatus = async (renewalId, currentStatus) => {
     try {
       await api.patch(`renewals/${renewalId}/`, { is_paid: !currentStatus });
@@ -198,6 +242,7 @@ const ProjectDetail = () => {
     setNewInvoice({ amount: '', date: new Date().toISOString().split('T')[0], status: 'PAID', deposit_account: '', description: '', payment_type: 'PARTIAL' });
     setRsInputUsd('');
     setRsSeats('');
+    setSelectedScope('');
     setShowInvoiceForm(false);
   };
 
@@ -217,13 +262,20 @@ const ProjectDetail = () => {
           payload.revenue_share_base_amount = inrProfit.toFixed(2);
           payload.description = `Monthly Profit Share (USD ${usdProfit} @ ₹${usdRate.toFixed(2)} = ₹${inrProfit.toFixed(2)} x ${perc}%)`;
         } else if (project.revenue_share_type === 'PER_SEAT') {
+          if (!selectedScope) {
+            toast.error("Please select a scope/course.");
+            return;
+          }
+          const scope = project.revenue_share_scopes.find(s => s.id.toString() === selectedScope.toString());
+          if (!scope) return;
+          
           const seats = parseInt(rsSeats || 0);
-          const costPerSeat = parseFloat(project.per_seat_cost || 0);
-          const inrBase = seats * costPerSeat * usdRate;
-          const shareInr = inrBase * (perc / 100);
+          const earningUsd = parseFloat(scope.earning || 0);
+          const shareInr = seats * earningUsd * usdRate;
           payload.amount = shareInr.toFixed(2);
           payload.revenue_share_seats_sold = seats;
-          payload.description = `Admission Share - ${seats} Seats (${perc}% of USD ${costPerSeat} per seat @ ₹${usdRate.toFixed(2)})`;
+          payload.revenue_share_scope = scope.id;
+          payload.description = `Admission Share - ${seats} Seats (${scope.name} @ USD ${earningUsd} Earning per seat, Rate: ₹${usdRate.toFixed(2)})`;
         }
         payload.payment_type = 'PARTIAL';
       }
@@ -342,9 +394,11 @@ const ProjectDetail = () => {
                   </div>
                   <div style={{ fontSize: '0.85rem' }}>Live Rate: 1 USD = <span className="strong">₹{usdRate.toFixed(2)}</span></div>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Share Percentage: <span className="strong">{project.revenue_share_percentage}%</span>
-                </div>
+                {project.revenue_share_type === 'PROFIT_SHARE' && (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    Share Percentage: <span className="strong">{project.revenue_share_percentage}%</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -356,10 +410,22 @@ const ProjectDetail = () => {
                     <input type="number" step="0.01" required value={rsInputUsd} onChange={e => setRsInputUsd(e.target.value)} placeholder="0.00" />
                   </div>
                 ) : (
-                  <div className="form-group">
-                    <label>Number of Seats / Admissions</label>
-                    <input type="number" required value={rsSeats} onChange={e => setRsSeats(e.target.value)} placeholder="e.g. 5" />
-                  </div>
+                  <>
+                    <div className="form-group">
+                      <label>Scope / Course</label>
+                      <CustomSelect 
+                        required
+                        value={selectedScope} 
+                        onChange={val => setSelectedScope(val)} 
+                        placeholder="Select Scope..."
+                        options={(project.revenue_share_scopes || []).map(s => ({ value: s.id, label: s.name }))}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Number of Seats</label>
+                      <input type="number" required value={rsSeats} onChange={e => setRsSeats(e.target.value)} placeholder="e.g. 5" />
+                    </div>
+                  </>
                 )
               ) : (
                 <>
@@ -422,11 +488,27 @@ const ProjectDetail = () => {
             
             {project.project_type === 'REVENUE_SHARE' && (
               <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Calculated INR Amount to be Logged:</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
-                  {project.revenue_share_type === 'PROFIT_SHARE' 
-                    ? formatCurrency((parseFloat(rsInputUsd || 0) * usdRate) * (parseFloat(project.revenue_share_percentage || 0) / 100))
-                    : formatCurrency((parseInt(rsSeats || 0) * parseFloat(project.per_seat_cost || 0) * usdRate) * (parseFloat(project.revenue_share_percentage || 0) / 100))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Calculated Total Earning (INR):</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                      {project.revenue_share_type === 'PROFIT_SHARE' 
+                        ? formatCurrency((parseFloat(rsInputUsd || 0) * usdRate) * (parseFloat(project.revenue_share_percentage || 0) / 100))
+                        : formatCurrency((parseInt(rsSeats || 0) * parseFloat((project.revenue_share_scopes?.find(s => s.id.toString() === selectedScope?.toString())?.earning) || 0) * usdRate))}
+                    </div>
+                  </div>
+                  {project.revenue_share_type === 'PER_SEAT' && selectedScope && rsSeats > 0 && (
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Project Expenses (INR):</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--danger)' }}>
+                        {formatCurrency(totalExpenses)}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Net Profit (Earning - Expenses):</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                        {formatCurrency((parseInt(rsSeats || 0) * parseFloat((project.revenue_share_scopes?.find(s => s.id.toString() === selectedScope?.toString())?.earning) || 0) * usdRate) - totalExpenses)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -482,6 +564,71 @@ const ProjectDetail = () => {
           <Pagination {...invoicesPagination} />
         </div>
       </div>
+
+      {project.project_type === 'REVENUE_SHARE' && project.revenue_share_type === 'PER_SEAT' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--info)' }}>
+          <div className="action-bar" style={{ background: 'transparent', border: 'none', padding: 0, marginBottom: '1rem' }}>
+            <div className="action-bar-left">
+              <h3 className="card-title" style={{ margin: 0 }}>Revenue Share Scopes (Courses/Programs)</h3>
+            </div>
+            <div className="action-bar-right">
+              <button className="btn btn-primary" onClick={() => { if (showScopeForm) { resetScopeForm(); } else { resetScopeForm(); setShowScopeForm(true); } }}>
+                {showScopeForm ? <X size={18}/> : <><Plus size={18} /> Add Scope</>}
+              </button>
+            </div>
+          </div>
+
+          {showScopeForm && (
+            <form onSubmit={handleAddScope} className="premium-form">
+              <div className="premium-form-grid">
+                <div className="form-group">
+                  <label>Scope / Course Name</label>
+                  <input type="text" required placeholder="e.g. MBBS, Nursing" value={newScope.name} onChange={e => setNewScope({...newScope, name: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Flat Earning per Seat (USD)</label>
+                  <input type="number" step="0.01" required placeholder="e.g. 500.00" value={newScope.earning} onChange={e => setNewScope({...newScope, earning: e.target.value})} />
+                </div>
+              </div>
+              <div className="premium-form-actions">
+                <button type="button" className="btn" onClick={resetScopeForm}>Cancel</button>
+                <button type="submit" className="btn btn-success">{editingScope ? 'Update' : 'Save'}</button>
+              </div>
+            </form>
+          )}
+
+          <div className="table-container">
+            <table className="responsive-table">
+              <thead>
+                <tr>
+                  <th>Scope Name</th>
+                  <th>Earning per Seat (USD)</th>
+                  <th>Real-Time Earning (INR)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(project.revenue_share_scopes || []).map(s => (
+                  <tr key={s.id}>
+                    <td data-label="Scope Name" className="strong">{s.name}</td>
+                    <td data-label="Earning (USD)" style={{ color: 'var(--success)', fontWeight: 'bold' }}>${parseFloat(s.earning).toFixed(2)}</td>
+                    <td data-label="Earning (INR)" style={{ color: 'var(--info)', fontWeight: 'bold' }}>{formatCurrency(parseFloat(s.earning) * usdRate)}</td>
+                    <td data-label="Actions">
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button className="btn" onClick={() => handleEditScope(s)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }}><Edit2 size={16}/></button>
+                        <button className="btn" onClick={() => handleDeleteScope(s.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }}><Trash2 size={16}/></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {(!project.revenue_share_scopes || project.revenue_share_scopes.length === 0) && (
+                  <tr><td colSpan="4" style={{textAlign:'center'}}>No scopes added. Please add courses like MBBS, Nursing.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 500px), 1fr))', gap: '1.5rem' }}>
         

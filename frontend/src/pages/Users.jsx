@@ -9,7 +9,6 @@ import CustomSelect from '../components/CustomSelect';
 const Users = () => {
   const toast = useToast();
   const confirm = useConfirm();
-
   const { user } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);

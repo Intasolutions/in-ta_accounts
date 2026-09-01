@@ -386,14 +386,10 @@ const Projects = () => {
                           ]}
                         />
                       </div>
-                      <div className="form-group">
-                        <label>Share Percentage (%)</label>
-                        <input type="number" step="0.01" required value={newProject.revenue_share_percentage} onChange={e => setNewProject({...newProject, revenue_share_percentage: e.target.value})} placeholder="e.g. 20" />
-                      </div>
-                      {newProject.revenue_share_type === 'PER_SEAT' && (
+                      {newProject.revenue_share_type === 'PROFIT_SHARE' && (
                         <div className="form-group">
-                          <label>Total Cost Per Seat (USD / INR)</label>
-                          <input type="number" step="0.01" required value={newProject.per_seat_cost} onChange={e => setNewProject({...newProject, per_seat_cost: e.target.value})} placeholder="e.g. 5000" />
+                          <label>Share Percentage (%)</label>
+                          <input type="number" step="0.01" required value={newProject.revenue_share_percentage} onChange={e => setNewProject({...newProject, revenue_share_percentage: e.target.value})} placeholder="e.g. 20" />
                         </div>
                       )}
                     </>
