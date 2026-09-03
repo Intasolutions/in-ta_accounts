@@ -178,7 +178,7 @@ const Quotations = () => {
         <div className="no-print" style={{
           width: isSidebarOpen ? '350px' : '0',
           borderRight: isSidebarOpen ? '1px solid var(--border-color)' : 'none',
-          background: 'var(--surface-color)',
+          background: '#ffffff',
           transition: 'width 0.3s ease',
           display: 'flex',
           flexDirection: 'column',
@@ -186,7 +186,7 @@ const Quotations = () => {
           flexShrink: 0
         }}>
           <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-            <h2 style={{ margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>
               <Calculator size={18} /> Saved Quotes
             </h2>
             <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={() => setQuote(createDefaultQuote(quotations))}>
@@ -209,25 +209,26 @@ const Quotations = () => {
                   padding: '1rem',
                   borderRadius: '8px',
                   border: isSelected ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
-                  background: isSelected ? 'rgba(59, 130, 246, 0.05)' : '#fff',
+                  background: isSelected ? '#f1f5f9' : '#ffffff',
                   cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                  transition: 'all 0.2s'
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s',
+                  color: '#0f172a'
                 }} onClick={() => handleView(q)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                    <strong style={{ fontSize: '0.95rem' }}>{q.quote_no}</strong>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{q.date}</span>
+                    <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{q.quote_no}</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{q.date}</span>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {q.client_name || 'No Client Name'}
                   </div>
                   <div style={{ fontWeight: 'bold', color: 'var(--success)', marginBottom: '0.75rem' }}>
                     {formatCurrency(total)}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn" onClick={(e) => { e.stopPropagation(); handlePrintQuote(q); }} style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', background: '#f1f5f9' }}><Printer size={14} /> Print</button>
+                    <button className="btn" onClick={(e) => { e.stopPropagation(); handlePrintQuote(q); }} style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', background: '#e2e8f0', color: '#0f172a', fontWeight: '500' }}><Printer size={14} /> Print</button>
                     {user?.role === 'ACCOUNTANT' || user?.role === 'OWNER' ? (
-                      <button className="btn" onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }} style={{ padding: '0.25rem', color: 'var(--danger)', background: '#fef2f2' }}><Trash2 size={14}/></button>
+                      <button className="btn" onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }} style={{ padding: '0.4rem', color: 'var(--danger)', background: '#fee2e2' }}><Trash2 size={14}/></button>
                     ): null}
                   </div>
                 </div>
@@ -253,9 +254,9 @@ const Quotations = () => {
           </button>
 
           <div className="builder-container" style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
-            <div className="action-bar no-print" style={{ marginBottom: '1rem', background: '#fff', padding: '1rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+            <div className="action-bar no-print" style={{ marginBottom: '1rem', background: '#ffffff', padding: '1rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '3rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>{quote.quote_no ? `Editing ${quote.quote_no}` : 'New Quotation'}</h2>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a', fontWeight: 'bold' }}>{quote.quote_no ? `Editing ${quote.quote_no}` : 'New Quotation'}</h2>
               </div>
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button className="btn btn-primary" onClick={handleSave}><Save size={18} /> Save</button>

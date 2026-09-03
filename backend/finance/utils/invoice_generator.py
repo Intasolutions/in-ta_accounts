@@ -132,7 +132,7 @@ def generate_invoice_pdf(invoice):
     # ---------------- CLIENT & INVOICE DETAILS ----------------
     client_name = invoice.project.client.name if invoice.project and invoice.project.client else "N/A"
     client_company = invoice.project.client.company_name if invoice.project and invoice.project.client else ""
-    client_phone = invoice.project.client.phone if invoice.project and invoice.project.client else ""
+    client_phone = invoice.project.client.phone_number if invoice.project and invoice.project.client else ""
     client_address = invoice.project.client.address if invoice.project and invoice.project.client else ""
     
     invoice_no = f"INV-{str(invoice.id).zfill(3)}"
