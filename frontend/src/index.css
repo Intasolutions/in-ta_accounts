@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
 
 :root {
   --bg-color: #0f172a;
@@ -868,9 +869,9 @@ tbody tr:last-child td {
 }
 
 .print-input {
-  background: #1e293b; /* Matte black/slate */
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #f8fafc;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
   padding: 0.5rem;
   border-radius: 0.25rem;
   font-family: inherit;
@@ -884,7 +885,8 @@ tbody tr:last-child td {
 .print-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  background: #0f172a;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .quote-document {
@@ -907,8 +909,10 @@ tbody tr:last-child td {
 
 .quote-company-info h1 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.35rem;
+  font-weight: 900;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: -0.5px;
   color: #0f172a;
 }
 
@@ -947,6 +951,8 @@ tbody tr:last-child td {
 
 .quote-for-block h3 {
   font-size: 0.85rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
   color: #64748b;
   margin: 0 0 1rem 0;
   letter-spacing: 1px;
@@ -983,10 +989,11 @@ tbody tr:last-child td {
   padding: 1rem;
   border-top: 2px solid #000;
   border-bottom: 2px solid #000;
-  font-weight: 700;
+  font-weight: 800;
   color: #000;
   text-transform: none;
   font-size: 0.95rem;
+  font-family: 'Montserrat', sans-serif;
   letter-spacing: normal;
   background: transparent;
 }
@@ -1017,7 +1024,8 @@ tbody tr:last-child td {
 
 .totals-row.grand-total {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 800;
+  font-family: 'Montserrat', sans-serif;
   border-top: 2px solid #000;
   padding-top: 1rem;
   margin-top: 0.5rem;

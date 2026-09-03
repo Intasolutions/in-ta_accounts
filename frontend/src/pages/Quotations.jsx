@@ -23,6 +23,7 @@ const Quotations = () => {
     client_name: '',
     client_company: '',
     client_address: '',
+    main_heading: 'Scope of Work & Professional Services',
     items: [
       { id: Date.now(), heading: '', description: '', quantity: 1, unit_price: 0 }
     ],
@@ -223,7 +224,7 @@ const Quotations = () => {
                   <p>www.in-tasolutions.com</p>
                 </div>
                 <div className="quote-logo-wrapper">
-                  <img src="/logo.png" alt="INTA Logo" className="quote-logo-img" />
+                  <img src="/logo-new.jpg" alt="INTA Logo" className="quote-logo-img" />
                 </div>
               </div>
 
@@ -263,6 +264,22 @@ const Quotations = () => {
               </div>
 
               {/* Items Table */}
+              <div style={{ marginTop: '2rem' }}>
+                <div className="no-print">
+                  <input 
+                    type="text" 
+                    value={quote.main_heading} 
+                    onChange={e => setQuote({...quote, main_heading: e.target.value})} 
+                    className="print-input" 
+                    style={{ width: '100%', fontWeight: 'bold', marginBottom: '1rem', fontSize: '1rem' }} 
+                  />
+                </div>
+                <div className="print-only">
+                  <h4 style={{ color: '#0f172a', marginBottom: '1rem', fontSize: '1rem', fontWeight: '800', fontFamily: "'Montserrat', sans-serif", textTransform: 'uppercase' }}>
+                    {quote.main_heading}
+                  </h4>
+                </div>
+              </div>
               <table className="quote-table">
                 <thead>
                   <tr>
@@ -326,7 +343,7 @@ const Quotations = () => {
               </table>
 
               <div className="no-print" style={{ padding: '1rem 0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-main)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#0f172a', fontWeight: '500' }}>
                   <input type="checkbox" checked={quote.include_third_party} onChange={e => setQuote({...quote, include_third_party: e.target.checked})} />
                   Include Third-Party Integration / API Cost Section
                 </label>
@@ -334,7 +351,7 @@ const Quotations = () => {
 
               {quote.include_third_party && (
                 <div style={{ marginTop: '2rem' }}>
-                  <h4 style={{ color: 'var(--text-main)', marginBottom: '1rem', fontSize: '1rem' }} className="no-print">Third-Party Integration & API Costs</h4>
+                  <h4 style={{ color: '#0f172a', marginBottom: '1rem', fontSize: '1rem', fontWeight: '800', fontFamily: "'Montserrat', sans-serif", textTransform: 'uppercase' }}>Third-Party Integration & API Costs</h4>
                   <table className="quote-table third-party-table">
                     <thead>
                       <tr>
