@@ -17,8 +17,15 @@ const Dashboard = () => {
   
   // Date Filtering State
   const now = new Date();
-  // Default to past 3 months (current month + 2 previous months)
-  const firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0];
+  const SYSTEM_START_DATE = new Date('2026-08-01');
+  
+  // Default to past 3 months (current month + 2 previous months), but never before SYSTEM_START_DATE
+  let calculatedFirstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+  if (calculatedFirstDay < SYSTEM_START_DATE) {
+    calculatedFirstDay = SYSTEM_START_DATE;
+  }
+  
+  const firstDay = calculatedFirstDay.toISOString().split('T')[0];
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
   
   const [startDate, setStartDate] = useState(firstDay);

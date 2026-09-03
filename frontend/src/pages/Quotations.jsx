@@ -41,7 +41,7 @@ const Quotations = () => {
     third_party_desc: 'Third Party Integration & API Cost',
     third_party_cost: 0,
     third_party_gst: 18,
-  };
+  });
 
   const [quote, setQuote] = useState(() => createDefaultQuote());
 
