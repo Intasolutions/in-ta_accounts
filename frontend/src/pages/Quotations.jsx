@@ -41,6 +41,7 @@ const Quotations = () => {
     third_party_desc: 'Third Party Integration & API Cost',
     third_party_cost: 0,
     third_party_gst: 18,
+    advance_percentage: 50,
   });
 
   const [quote, setQuote] = useState(() => createDefaultQuote());
@@ -351,16 +352,16 @@ const Quotations = () => {
                               onChange={e => handleItemChange(item.id, 'heading', e.target.value, e)}
                               placeholder={`Item ${index + 1} Heading...`}
                               className="print-input"
-                              rows="1"
-                              style={{ width: '100%', fontWeight: 'bold', resize: 'none', overflow: 'hidden', paddingBottom: '0.25rem' }}
+                              rows={item.heading ? item.heading.split('\n').length : 1}
+                              style={{ width: '100%', fontWeight: 'bold', resize: 'vertical', paddingBottom: '0.25rem', minHeight: '1.5rem' }}
                             />
                             <textarea 
                               value={item.description} 
                               onChange={e => handleItemChange(item.id, 'description', e.target.value, e)}
                               placeholder={`Item ${index + 1} Description...`}
-                              rows="1"
+                              rows={item.description ? item.description.split('\n').length : 1}
                               className="print-input"
-                              style={{ width: '100%', resize: 'none', overflow: 'hidden', paddingTop: '0.25rem', color: '#475569' }}
+                              style={{ width: '100%', resize: 'vertical', paddingTop: '0.25rem', color: '#475569', minHeight: '2rem' }}
                             />
                           </div>
                           <div className="print-only" style={{ whiteSpace: 'pre-wrap' }}>
@@ -462,9 +463,27 @@ const Quotations = () => {
                           <span>{formatCurrency(calculateThirdPartyTotal())}</span>
                         </div>
                       )}
-                      <div className="totals-row grand-total">
+                      <div className="totals-row grand-total" style={{ borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
                         <span>Total:</span>
                         <span>{formatCurrency(calculateTotal())}</span>
+                      </div>
+                      <div className="totals-row">
+                        <span className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Advance: 
+                          <input 
+                            type="number" 
+                            className="print-input" 
+                            style={{ width: '50px', textAlign: 'center' }} 
+                            value={quote.advance_percentage || 0} 
+                            onChange={e => setQuote({...quote, advance_percentage: e.target.value})}
+                          /> %
+                        </span>
+                        <span className="print-only">Advance ({quote.advance_percentage || 0}%):</span>
+                        <span>{formatCurrency(calculateTotal() * ((quote.advance_percentage || 0) / 100))}</span>
+                      </div>
+                      <div className="totals-row" style={{ color: 'var(--primary-color)', fontWeight: 'bold', marginTop: '0.5rem' }}>
+                        <span>Balance:</span>
+                        <span>{formatCurrency(calculateTotal() * (1 - (quote.advance_percentage || 0) / 100))}</span>
                       </div>
                     </div>
                 </div>

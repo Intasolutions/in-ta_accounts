@@ -1141,4 +1141,22 @@ input:checked + .toggle-slider:before {
   span.print-only, strong.print-only {
     display: inline-block !important;
   }
+
+  /* Prevent table rows and totals from breaking across pages */
+  table {
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  thead {
+    display: table-header-group;
+  }
+  
+  .quote-totals-container {
+    page-break-inside: avoid;
+  }
 }
