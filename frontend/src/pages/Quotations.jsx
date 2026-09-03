@@ -24,7 +24,7 @@ const Quotations = () => {
     client_company: '',
     client_address: '',
     items: [
-      { id: Date.now(), description: '', quantity: 1, unit_price: 0 }
+      { id: Date.now(), heading: '', description: '', quantity: 1, unit_price: 0 }
     ],
     include_third_party: false,
     third_party_desc: 'Third Party Integration & API Cost',
@@ -53,7 +53,7 @@ const Quotations = () => {
   const handleAddItem = () => {
     setQuote({
       ...quote,
-      items: [...quote.items, { id: Date.now(), description: '', quantity: 1, unit_price: 0 }]
+      items: [...quote.items, { id: Date.now(), heading: '', description: '', quantity: 1, unit_price: 0 }]
     });
   };
 
@@ -223,7 +223,7 @@ const Quotations = () => {
                   <p>www.in-tasolutions.com</p>
                 </div>
                 <div className="quote-logo-wrapper">
-                  <div className="quote-logo">INTA</div>
+                  <img src="/logo.png" alt="INTA Logo" className="quote-logo-img" />
                 </div>
               </div>
 
@@ -277,19 +277,27 @@ const Quotations = () => {
                   {quote.items.map((item, index) => (
                     <tr key={item.id}>
                       <td>
-                        <div className="no-print">
+                        <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <input 
+                            type="text"
+                            value={item.heading}
+                            onChange={e => handleItemChange(item.id, 'heading', e.target.value)}
+                            placeholder={`Item ${index + 1} Heading...`}
+                            className="print-input"
+                            style={{ width: '100%', fontWeight: 'bold' }}
+                          />
                           <textarea 
                             value={item.description} 
                             onChange={e => handleItemChange(item.id, 'description', e.target.value)}
                             placeholder={`Item ${index + 1} Description...`}
-                            rows="3"
+                            rows="2"
                             className="print-input"
                             style={{ width: '100%', resize: 'vertical' }}
                           />
                         </div>
                         <div className="print-only" style={{ whiteSpace: 'pre-wrap' }}>
-                          <strong>{index + 1}. </strong>
-                          {item.description}
+                          <strong>{index + 1}. {item.heading}</strong>
+                          {item.description && <div>{item.description}</div>}
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
@@ -309,52 +317,65 @@ const Quotations = () => {
                     </tr>
                   ))}
                   
-                  {/* Third Party Section */}
-                  <tr className="no-print">
-                    <td colSpan="5" style={{ padding: '1rem 0' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-main)' }}>
-                        <input type="checkbox" checked={quote.include_third_party} onChange={e => setQuote({...quote, include_third_party: e.target.checked})} />
-                        Include Third-Party Integration / API Cost Section
-                      </label>
-                    </td>
-                  </tr>
-
-                  {quote.include_third_party && (
-                    <tr className="third-party-row">
-                      <td style={{ borderTop: '2px solid #e2e8f0', paddingTop: '1rem' }}>
-                        <div className="no-print">
-                          <input type="text" value={quote.third_party_desc} onChange={e => setQuote({...quote, third_party_desc: e.target.value})} className="print-input" style={{ width: '100%', fontWeight: 'bold' }} />
-                        </div>
-                        <div className="print-only">
-                          <strong>* {quote.third_party_desc}</strong>
-                        </div>
-                      </td>
-                      <td style={{ borderTop: '2px solid #e2e8f0', paddingTop: '1rem', textAlign: 'center' }}>
-                        <div className="no-print" style={{ color: 'var(--text-main)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
-                          GST: <input type="number" value={quote.third_party_gst} onChange={e => setQuote({...quote, third_party_gst: e.target.value})} className="print-input" style={{ width: '50px' }}/>%
-                        </div>
-                        <div className="print-only" style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                          + {quote.third_party_gst}% GST
-                        </div>
-                      </td>
-                      <td style={{ borderTop: '2px solid #e2e8f0', paddingTop: '1rem', textAlign: 'right' }}>
-                        <input className="no-print print-input" type="number" value={quote.third_party_cost} onChange={e => setQuote({...quote, third_party_cost: e.target.value})} style={{ width: '100px', textAlign: 'right' }}/>
-                        <span className="print-only">{quote.third_party_cost}</span>
-                      </td>
-                      <td style={{ borderTop: '2px solid #e2e8f0', paddingTop: '1rem', textAlign: 'right' }}>
-                        <strong>{formatCurrency(calculateThirdPartyTotal())}</strong>
-                      </td>
-                      <td className="no-print" style={{ borderTop: '2px solid #e2e8f0' }}></td>
-                    </tr>
-                  )}
-
                   <tr className="no-print">
                     <td colSpan="5">
-                      <button className="btn btn-primary" onClick={handleAddItem} style={{ marginTop: '1rem' }}><Plus size={16} /> Add Item</button>
+                      <button className="btn btn-primary" onClick={handleAddItem} style={{ marginTop: '0.5rem' }}><Plus size={16} /> Add Item</button>
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              <div className="no-print" style={{ padding: '1rem 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-main)' }}>
+                  <input type="checkbox" checked={quote.include_third_party} onChange={e => setQuote({...quote, include_third_party: e.target.checked})} />
+                  Include Third-Party Integration / API Cost Section
+                </label>
+              </div>
+
+              {quote.include_third_party && (
+                <div style={{ marginTop: '2rem' }}>
+                  <h4 style={{ color: 'var(--text-main)', marginBottom: '1rem', fontSize: '1rem' }} className="no-print">Third-Party Integration & API Costs</h4>
+                  <table className="quote-table third-party-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '55%' }}>Description</th>
+                        <th style={{ width: '15%', textAlign: 'center' }}>GST %</th>
+                        <th style={{ width: '15%', textAlign: 'right' }}>Cost</th>
+                        <th style={{ width: '15%', textAlign: 'right' }}>Total (Inc. GST)</th>
+                        <th className="no-print" style={{ width: '5%' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <div className="no-print">
+                            <input type="text" value={quote.third_party_desc} onChange={e => setQuote({...quote, third_party_desc: e.target.value})} className="print-input" style={{ width: '100%', fontWeight: 'bold' }} />
+                          </div>
+                          <div className="print-only">
+                            <strong>* {quote.third_party_desc}</strong>
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                            <input type="number" value={quote.third_party_gst} onChange={e => setQuote({...quote, third_party_gst: e.target.value})} className="print-input" style={{ width: '60px', textAlign: 'center' }}/>
+                          </div>
+                          <div className="print-only" style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                            {quote.third_party_gst}%
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <input className="no-print print-input" type="number" value={quote.third_party_cost} onChange={e => setQuote({...quote, third_party_cost: e.target.value})} style={{ width: '100px', textAlign: 'right' }}/>
+                          <span className="print-only">{quote.third_party_cost}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <strong>{formatCurrency(calculateThirdPartyTotal())}</strong>
+                        </td>
+                        <td className="no-print"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Totals */}
               <div className="quote-totals-container">
