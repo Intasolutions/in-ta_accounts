@@ -259,3 +259,18 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_type} - {self.amount} - {self.bank_account.name}"
+
+class Quotation(models.Model):
+    quote_no = models.CharField(max_length=50, unique=True)
+    date = models.DateField(default=timezone.now)
+    valid_until = models.DateField(null=True, blank=True)
+    client_name = models.CharField(max_length=255)
+    raw_data = models.JSONField(help_text="Stores the full quotation JSON data including line items, sub-rate, and GST")
+    created_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-id']
+
+    def __str__(self):
+        return f"{self.quote_no} - {self.client_name}"

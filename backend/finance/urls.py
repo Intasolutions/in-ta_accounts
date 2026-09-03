@@ -4,7 +4,7 @@ from .views import (
     UserViewSet, ClientViewSet, ProjectViewSet, 
     InvoiceViewSet, AdvanceWalletViewSet, AdvanceRequestViewSet, CompanyExpenseViewSet, MonthLockViewSet,
     EnhancementViewSet, RenewalViewSet, BankAccountViewSet, TransactionViewSet, OwnerDrawViewSet,
-    PasswordResetDirectView, CheckEmailView, RevenueShareScopeViewSet
+    PasswordResetDirectView, CheckEmailView, RevenueShareScopeViewSet, QuotationViewSet
 )
 
 router = DefaultRouter()
@@ -22,6 +22,7 @@ router.register(r'enhancements', EnhancementViewSet)
 router.register(r'renewals', RenewalViewSet)
 router.register(r'transactions', TransactionViewSet, basename='transaction')
 router.register(r'owner-draws', OwnerDrawViewSet, basename='ownerdraw')
+router.register(r'quotations', QuotationViewSet, basename='quotation')
 
 urlpatterns = [
     path('check-email/', CheckEmailView.as_view(), name='check_email'),

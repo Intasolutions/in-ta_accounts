@@ -12,6 +12,7 @@ import OwnerDrawings from './pages/OwnerDrawings';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import Users from './pages/Users';
+import Quotations from './pages/Quotations';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import SplashScreen from './components/SplashScreen';
 import './index.css';
@@ -40,6 +41,7 @@ const MainApp = () => {
             <Route path="/banking" element={<Banking />} />
             <Route path="/owner-drawings" element={<OwnerDrawings />} />
             <Route path="/month-end" element={<MonthEnd />} />
+            <Route path="/quotations" element={<Quotations />} />
             <Route path="/users" element={<Users />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

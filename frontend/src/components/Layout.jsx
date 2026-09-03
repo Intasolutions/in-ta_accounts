@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, FileText, Wallet, Menu, X, Landmark, Receipt, Archive, Users, LogOut, Gem } from 'lucide-react';
+import { LayoutDashboard, Briefcase, FileText, Wallet, Menu, X, Landmark, Receipt, Archive, Users, LogOut, Gem, Calculator } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -32,6 +32,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           <li>
             <NavLink to="/expenses" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
               <Receipt size={20} /> Expenses
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/quotations" onClick={toggleSidebar} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+              <Calculator size={20} /> Quotations
             </NavLink>
           </li>
           <li>

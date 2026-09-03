@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, RevenueShareScope
+from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, RevenueShareScope, Quotation
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
@@ -135,4 +135,11 @@ class OwnerDrawSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OwnerDraw
+        fields = '__all__'
+
+class QuotationSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Quotation
         fields = '__all__'
