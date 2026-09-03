@@ -208,6 +208,20 @@ const ProjectDetail = () => {
     }
   };
 
+  const toggleProjectStatus = async () => {
+    if (await confirm(`Are you sure you want to mark this project as ${project.status === 'COMPLETED' ? 'ACTIVE' : 'COMPLETED'}?`)) {
+      try {
+        const newStatus = project.status === 'COMPLETED' ? 'ACTIVE' : 'COMPLETED';
+        await api.patch(`projects/${project.id}/`, { status: newStatus });
+        fetchProject();
+        toast.success(`Project marked as ${newStatus}`);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to update project status');
+      }
+    }
+  };
+
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0);
   };
@@ -333,9 +347,34 @@ const ProjectDetail = () => {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="page-title" style={{ marginBottom: 0 }}>{project.name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <h1 className="page-title" style={{ marginBottom: 0 }}>{project.name}</h1>
+              <span style={{ 
+                padding: '0.2rem 0.6rem', 
+                borderRadius: '12px', 
+                fontSize: '0.75rem', 
+                fontWeight: 'bold', 
+                background: project.status === 'COMPLETED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', 
+                color: project.status === 'COMPLETED' ? 'var(--success)' : 'var(--primary-color)' 
+              }}>
+                {project.status === 'COMPLETED' ? 'Completed' : 'Active'}
+              </span>
+            </div>
             <div style={{ color: 'var(--text-muted)' }}>Client: {project.client_name}</div>
           </div>
+        </div>
+        <div>
+          <button 
+            className="btn" 
+            onClick={toggleProjectStatus}
+            style={{ 
+              background: project.status === 'COMPLETED' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+              color: project.status === 'COMPLETED' ? 'var(--primary-color)' : 'var(--success)',
+              fontWeight: 'bold'
+            }}
+          >
+            {project.status === 'COMPLETED' ? 'Reopen as Active' : <><CheckCircle size={18}/> Mark as Completed</>}
+          </button>
         </div>
       </div>
 

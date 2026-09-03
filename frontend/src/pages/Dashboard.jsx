@@ -46,9 +46,13 @@ const Dashboard = () => {
         api.get('projects/'),
         api.get('renewals/')
       ]);
+      const SYSTEM_START_DATE = new Date('2026-08-01');
       
-      setInvoices(invRes.data);
-      setExpenses(expRes.data);
+      const filteredInvs = invRes.data.filter(i => new Date(i.date) >= SYSTEM_START_DATE);
+      const filteredExps = expRes.data.filter(e => new Date(e.date) >= SYSTEM_START_DATE);
+
+      setInvoices(filteredInvs);
+      setExpenses(filteredExps);
       setProjects(projRes.data);
       setRenewals(renRes.data);
     } catch (err) {
@@ -93,9 +97,9 @@ const Dashboard = () => {
     return invoices.filter(i => i.status === 'SENT').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
   }, [invoices]);
 
-  // Pending Project Balance (Total Contract Value - Total Paid) for all projects
+  // Pending Project Balance (Total Contract Value - Total Paid) for all ACTIVE projects
   const pendingProjectBalance = useMemo(() => {
-    return projects.reduce((total, p) => {
+    return projects.filter(p => p.status !== 'COMPLETED').reduce((total, p) => {
       const pInvoices = invoices.filter(i => i.project === p.id && i.status === 'PAID');
       const rev = pInvoices.reduce((sum, curr) => sum + parseFloat(curr.amount), 0);
       const pending = parseFloat(p.total_value || 0) - rev;

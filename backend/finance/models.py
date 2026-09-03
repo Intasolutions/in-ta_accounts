@@ -68,6 +68,12 @@ class Project(models.Model):
     revenue_share_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="e.g. 20.00 for 20%")
     per_seat_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Total cost of 1 seat/admission in USD or INR")
     
+    STATUS_CHOICES = (
+        ('ACTIVE', 'Active'),
+        ('COMPLETED', 'Completed'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

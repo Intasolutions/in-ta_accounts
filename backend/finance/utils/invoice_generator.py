@@ -2,319 +2,301 @@ import os
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.utils import ImageReader
 from django.core.files.base import ContentFile
+from django.conf import settings
+
+# Brand colors
+BRAND_BLUE = colors.HexColor("#3866df")
+
+def draw_header_footer(canvas, doc):
+    canvas.saveState()
+    PAGE_WIDTH, PAGE_HEIGHT = A4
+    
+    # ---------------- HEADER ----------------
+    # Logo & Company Name (Top Left)
+    logo_path = os.path.join(os.path.dirname(__file__), 'logo.jpg')
+    if not os.path.exists(logo_path):
+        logo_path = os.path.join(os.path.dirname(__file__), 'logo.png')
+        
+    if os.path.exists(logo_path):
+        canvas.drawImage(ImageReader(logo_path), 40, PAGE_HEIGHT - 90, width=50, height=50, preserveAspectRatio=True)
+    else:
+        # Fallback if no logo
+        canvas.setFillColor(BRAND_BLUE)
+        canvas.setFont("Helvetica-Bold", 20)
+        canvas.drawString(40, PAGE_HEIGHT - 70, "INTA")
+    
+    # Company Texts
+    canvas.setFont("Helvetica-Bold", 16)
+    canvas.setFillColor(colors.black)
+    canvas.drawString(100, PAGE_HEIGHT - 65, "IN-TA SOLUTIONS")
+    
+    canvas.setFont("Helvetica", 9)
+    canvas.setFillColor(colors.HexColor("#555555"))
+    canvas.drawString(100, PAGE_HEIGHT - 78, "SOFTWARE COMPANY")
+    
+    # "INVOICE" Text (Top Right)
+    canvas.setFont("Helvetica-Bold", 32)
+    canvas.setFillColor(BRAND_BLUE)
+    invoice_text = "INVOICE"
+    text_width = canvas.stringWidth(invoice_text, "Helvetica-Bold", 32)
+    canvas.drawString(PAGE_WIDTH - 40 - text_width, PAGE_HEIGHT - 70, invoice_text)
+    
+    # Gradient/Colored line under invoice
+    canvas.setStrokeColor(BRAND_BLUE)
+    canvas.setLineWidth(2)
+    canvas.line(100, PAGE_HEIGHT - 95, 380, PAGE_HEIGHT - 95)
+    
+    # Website Text
+    canvas.setFont("Helvetica", 9)
+    canvas.setFillColor(colors.HexColor("#555555"))
+    web_text = "IN-TASOLUTIONS.COM"
+    web_width = canvas.stringWidth(web_text, "Helvetica", 9)
+    canvas.drawString(PAGE_WIDTH - 40 - web_width, PAGE_HEIGHT - 98, web_text)
+    
+    # ---------------- FOOTER ----------------
+    # Bottom Blue Line
+    canvas.setStrokeColor(BRAND_BLUE)
+    canvas.setLineWidth(2)
+    canvas.line(40, 60, PAGE_WIDTH - 40, 60)
+    
+    # Footer Contact Info & Simple Vector Icons
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(colors.HexColor("#555555"))
+    
+    y_pos = 45
+    canvas.setStrokeColor(BRAND_BLUE)
+    canvas.setLineWidth(1.5)
+    
+    # Phone Icon (Simple receiver)
+    p = canvas.beginPath()
+    p.moveTo(42, y_pos+6)
+    p.lineTo(46, y_pos+6)
+    p.lineTo(45, y_pos+2)
+    p.lineTo(41, y_pos+2)
+    p.close()
+    canvas.drawPath(p, fill=0, stroke=1)
+    # Phone circle
+    canvas.arc(38, y_pos-1, 48, y_pos+9, 0, 360)
+    canvas.drawString(55, y_pos, "+91 9447595381")
+    
+    # Mail Icon (Envelope)
+    mail_x = 180
+    canvas.rect(mail_x, y_pos, 12, 8, stroke=1, fill=0)
+    canvas.line(mail_x, y_pos+8, mail_x+6, y_pos+4)
+    canvas.line(mail_x+12, y_pos+8, mail_x+6, y_pos+4)
+    canvas.drawString(mail_x + 18, y_pos, "intasolutionpvtltd@gmail.com")
+    
+    # Location Icon (Pin)
+    loc_x = 380
+    p2 = canvas.beginPath()
+    p2.moveTo(loc_x+5, y_pos+8)
+    p2.curveTo(loc_x+10, y_pos+8, loc_x+10, y_pos+3, loc_x+5, y_pos)
+    p2.curveTo(loc_x, y_pos+3, loc_x, y_pos+8, loc_x+5, y_pos+8)
+    canvas.drawPath(p2, fill=0, stroke=1)
+    canvas.arc(loc_x+3.5, y_pos+4.5, loc_x+6.5, y_pos+7.5, 0, 360) # Inner hole
+    canvas.drawString(loc_x + 15, y_pos, "Mananthavady, Kerala")
+
+    canvas.restoreState()
+
 
 def generate_invoice_pdf(invoice):
     """
-    Generates an ultra-premium PDF invoice with an absolute-positioned sidebar and custom curves.
+    Generates a highly professional enterprise-style PDF invoice matching the new design.
     """
     buffer = BytesIO()
     
-    # Page Setup
     PAGE_WIDTH, PAGE_HEIGHT = A4
-    LEFT_MARGIN = 240  # Push all flowables to the right side
-    RIGHT_MARGIN = 30
-    TOP_MARGIN = 40
-    BOTTOM_MARGIN = 40
+    MARGIN = 40
     
-    # Custom canvas hook for background graphics & sidebar text
-    def draw_background(canvas, doc):
-        canvas.saveState()
-        
-        # 1. Main Dark Blue Sidebar
-        canvas.setFillColor(colors.HexColor("#0a192f")) # Deep navy blue
-        p = canvas.beginPath()
-        p.moveTo(0, 0)
-        p.lineTo(200, 0)
-        p.curveTo(240, PAGE_HEIGHT * 0.3, 160, PAGE_HEIGHT * 0.7, 220, PAGE_HEIGHT)
-        p.lineTo(0, PAGE_HEIGHT)
-        p.close()
-        canvas.drawPath(p, fill=1, stroke=0)
-        
-        # 2. Accent Curve (Lighter blue overlay)
-        canvas.setFillColor(colors.HexColor("#1e3a8a"))
-        canvas.setFillAlpha(0.7)
-        p2 = canvas.beginPath()
-        p2.moveTo(0, 0)
-        p2.lineTo(150, 0)
-        p2.curveTo(220, PAGE_HEIGHT * 0.4, 80, PAGE_HEIGHT * 0.6, 180, PAGE_HEIGHT)
-        p2.lineTo(0, PAGE_HEIGHT)
-        p2.close()
-        canvas.drawPath(p2, fill=1, stroke=0)
-        
-        # Reset Alpha
-        canvas.setFillAlpha(1.0)
-        
-        # 3. Logo
-        logo_path = os.path.join(os.path.dirname(__file__), 'logo.jpg')
-        if not os.path.exists(logo_path):
-            logo_path = os.path.join(os.path.dirname(__file__), 'logo.png')
-            
-        if os.path.exists(logo_path):
-            # Increase dimensions significantly for a professional, prominent look
-            canvas.drawImage(ImageReader(logo_path), 20, PAGE_HEIGHT - 120, width=160, height=80, preserveAspectRatio=True)
-        else:
-            canvas.setFillColor(colors.white)
-            canvas.setFont("Helvetica-Bold", 24)
-            canvas.drawString(20, PAGE_HEIGHT - 80, "IN-TA SOLUTION PVT LTD")
-            
-        # 4. Sidebar Text (Invoice To & Terms)
-        canvas.setFillColor(colors.white)
-        
-        # Invoice To Header
-        canvas.setFont("Helvetica-Bold", 14)
-        canvas.drawString(20, 260, "Invoice to:")
-        
-        # Client Details
-        canvas.setFont("Helvetica-Bold", 12)
-        client_name = invoice.project.client.name if invoice.project.client else "N/A"
-        canvas.drawString(20, 240, client_name)
-        
-        canvas.setFont("Helvetica", 9)
-        client_company = invoice.project.client.company_name if invoice.project.client and invoice.project.client.company_name else ""
-        y_pos = 225
-        if client_company:
-            canvas.drawString(20, y_pos, client_company)
-            y_pos -= 15
-            
-        address = invoice.project.client.address if invoice.project.client and invoice.project.client.address else ""
-        if address:
-            # Simple text wrap for address
-            import textwrap
-            lines = textwrap.wrap(address, width=30)
-            for line in lines:
-                canvas.drawString(20, y_pos, line)
-                y_pos -= 12
-                
-        # Terms & Conditions
-        canvas.setFont("Helvetica-Bold", 10)
-        canvas.drawString(20, 120, "Terms & Conditions")
-        canvas.setFont("Helvetica", 8)
-        canvas.setFillColorRGB(0.8, 0.8, 0.8) # Light grey for terms
-        terms = "Payment is due within 15 days.\nPlease make checks payable to\nIN-TA SOLUTION PVT LTD."
-        t_y = 105
-        for line in terms.split('\n'):
-            canvas.drawString(20, t_y, line)
-            t_y -= 10
-            
-        # 5. Dynamic Watermark Stamp on the right side
-        canvas.translate(400, PAGE_HEIGHT / 2)
-        canvas.rotate(30)
-        if invoice.status == 'PAID':
-            canvas.setFillColorRGB(0, 0.6, 0)
-            canvas.setFillAlpha(0.1)
-            text = "PAID"
-        elif invoice.status == 'SENT':
-            canvas.setFillColorRGB(0.8, 0.2, 0)
-            canvas.setFillAlpha(0.1)
-            text = "PAYMENT DUE"
-        else:
-            canvas.setFillColorRGB(0.5, 0.5, 0.5)
-            canvas.setFillAlpha(0.1)
-            text = "DRAFT"
-            
-        canvas.setFont("Helvetica-Bold", 80)
-        canvas.drawCentredString(0, 0, text)
-        canvas.restoreState()
-
-    # Create the document with a heavily shifted left margin
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=A4, 
-        rightMargin=RIGHT_MARGIN, 
-        leftMargin=LEFT_MARGIN, 
-        topMargin=TOP_MARGIN, 
-        bottomMargin=BOTTOM_MARGIN
+        rightMargin=MARGIN, 
+        leftMargin=MARGIN, 
+        topMargin=130,  # Space for header
+        bottomMargin=80  # Space for footer line and contact info
     )
-    elements = []
     
+    elements = []
     styles = getSampleStyleSheet()
     normal = styles['Normal']
     normal.fontName = 'Helvetica'
     normal.fontSize = 9
-    normal.leading = 12
-    normal.textColor = colors.HexColor("#0a192f") # Deep navy blue like logo
+    normal.leading = 14
+    normal.textColor = colors.HexColor("#333333")
     
-    # Pre-calculate project cost for line items
+    # ---------------- CLIENT & INVOICE DETAILS ----------------
+    client_name = invoice.project.client.name if invoice.project and invoice.project.client else "N/A"
+    client_company = invoice.project.client.company_name if invoice.project and invoice.project.client else ""
+    client_phone = invoice.project.client.phone if invoice.project and invoice.project.client else ""
+    client_address = invoice.project.client.address if invoice.project and invoice.project.client else ""
+    
+    invoice_no = f"INV-{str(invoice.id).zfill(3)}"
+    date_str = invoice.date.strftime('%d %B %Y')
+    
+    client_info_html = f"<font color='#555555' size='8'>Invoice to :</font><br/>"
+    client_info_html += f"<font size='12'><b>{client_name}</b></font><br/>"
+    if client_company:
+        client_info_html += f"{client_company}<br/>"
+    if client_phone:
+        client_info_html += f"<font color='#777777'>{client_phone}</font><br/>"
+    if client_address:
+        addr_lines = client_address.split('\n')
+        client_info_html += f"<font color='#777777'>{'<br/>'.join(addr_lines)}</font>"
+        
+    invoice_meta_html = f"<font size='9'><b>Invoice no : {invoice_no}</b></font><br/>"
+    invoice_meta_html += f"<font color='#777777' size='8'>{date_str}</font>"
+    
+    top_table_data = [
+        [Paragraph(client_info_html, normal), Paragraph(invoice_meta_html, ParagraphStyle('RightBold', parent=normal, alignment=2))]
+    ]
+    
+    top_table = Table(top_table_data, colWidths=[PAGE_WIDTH/2 - MARGIN, PAGE_WIDTH/2 - MARGIN])
+    top_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (0,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    
+    elements.append(top_table)
+    elements.append(Spacer(1, 40))
+    
+    # ---------------- LINE ITEMS TABLE ----------------
+    col_widths = [40, 250, 50, 80, 95]
+    table_data = [
+        ['NO', 'DESCRIPTION', 'QTY', 'PRICE', 'TOTAL']
+    ]
+    
     project = invoice.project
-    enhancements_total = sum(e.cost for e in project.enhancements.all()) if project else 0
-    total_project_cost = project.total_value + enhancements_total if project else invoice.amount
-    
-    # ---------------- RIGHT SIDE FLOWABLES ----------------
-    
-    elements.append(Spacer(1, 20)) # Add padding above heading
-    
-    # INVOICE TITLE
-    title_style = ParagraphStyle(
-        'InvoiceTitle',
-        parent=styles['Heading1'],
-        fontName='Helvetica-Bold',
-        fontSize=26,
-        textColor=colors.HexColor("#1e3a8a"), # Blue like logo
-        spaceBefore=10,
-        spaceAfter=30, # Increased padding
-        alignment=0 # Left aligned in the remaining space
-    )
-    
-    payment_type_display = getattr(invoice, 'get_payment_type_display', lambda: 'Payment')()
-    title_text = f"INVOICE - {payment_type_display.upper()}"
-    elements.append(Paragraph(f"<b>{title_text}</b>", title_style))
-    
-    # INVOICE METADATA TABLE
-    meta_data = [
-        [Paragraph("<b>Invoice#</b>", normal), f"INV-{str(invoice.id).zfill(4)}"],
-        [Paragraph("<b>Date</b>", normal), invoice.date.strftime('%B %d, %Y')],
-        [Paragraph("<b>Status</b>", normal), invoice.status]
-    ]
-    meta_table = Table(meta_data, colWidths=[60, 150])
-    meta_table.setStyle(TableStyle([
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#0a192f")),
-    ]))
-    elements.append(meta_table)
-    elements.append(Spacer(1, 30))
-    
-    # LINE ITEMS TABLE
-    FLOWABLE_WIDTH = PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN
-    col_widths = [FLOWABLE_WIDTH * 0.1, FLOWABLE_WIDTH * 0.5, FLOWABLE_WIDTH * 0.4]
-    
-    data = [
-        ['SL.', 'Item Description', 'Total']
-    ]
-    
-    if invoice.description:
-        desc = invoice.description.replace('\n', '<br/>')
-    else:
-        desc = f"Payment for Project: <b>{invoice.project.name if invoice.project else 'N/A'}</b><br/>Type: {invoice.project.project_type if invoice.project else 'N/A'}"
-    
-    # Show full project cost in the item description amount
-    data.append(["1", Paragraph(desc, normal), f"Rs. {total_project_cost:,.2f}"])
-    
-    table = Table(data, colWidths=col_widths)
-    
-    t_style = TableStyle([
-        # Header styles
-        ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#0a192f")),
-        ('ALIGN', (0,0), (-1,0), 'LEFT'),
-        ('ALIGN', (2,0), (2,0), 'RIGHT'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 9),
-        ('BOTTOMPADDING', (0,0), (-1,0), 10),
-        ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor("#e2e8f0")),
-        
-        # Row styles
-        ('TEXTCOLOR', (0,1), (-1,-1), colors.HexColor("#0a192f")),
-        ('ALIGN', (0,1), (-1,-1), 'LEFT'),
-        ('ALIGN', (2,1), (2,-1), 'RIGHT'),
-        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-        ('FONTSIZE', (0,1), (-1,-1), 9),
-        ('VALIGN', (0,1), (-1,-1), 'TOP'),
-        ('TOPPADDING', (0,1), (-1,-1), 12),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 12),
-        ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-    ])
-    table.setStyle(t_style)
-    elements.append(table)
-    elements.append(Spacer(1, 20))
-    
-    # TOTALS TABLE
-    totals_data = [
-        ['Sub Total:', f"Rs. {invoice.amount:,.2f}"],
-        ['Tax:', "0.00%"],
-        ['Total:', f"Rs. {invoice.amount:,.2f}"]
-    ]
-    totals_table = Table(totals_data, colWidths=[FLOWABLE_WIDTH * 0.6, FLOWABLE_WIDTH * 0.4])
-    totals_table.setStyle(TableStyle([
-        ('ALIGN', (0,0), (0,-1), 'RIGHT'),
-        ('ALIGN', (1,0), (1,-1), 'RIGHT'),
-        ('FONTNAME', (0,0), (0,1), 'Helvetica-Bold'),
-        ('FONTNAME', (1,0), (1,1), 'Helvetica'),
-        ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
-        ('TEXTCOLOR', (0,0), (-1,1), colors.HexColor("#0a192f")), # Default blue text
-        ('TEXTCOLOR', (0,-1), (-1,-1), colors.HexColor("#1e3a8a")), # Darker blue total instead of red
-        ('FONTSIZE', (0,-1), (-1,-1), 12),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('LINEABOVE', (0,-1), (-1,-1), 1, colors.HexColor("#e2e8f0")),
-        ('LINEBELOW', (0,-1), (-1,-1), 1, colors.HexColor("#e2e8f0")),
-    ]))
-    elements.append(totals_table)
-    
-    # PROJECT SUMMARY
-    elements.append(Spacer(1, 20))
-    
+    total_project_cost = project.total_value if project else invoice.amount
     if project:
-        amount_billed = sum(inv.amount for inv in project.invoices.filter(status__in=['PAID', 'SENT']))
-        if invoice.status == 'DRAFT' and not invoice.pk:
-            amount_billed += invoice.amount
-        elif invoice.status == 'DRAFT' and invoice.pk:
-            amount_billed += invoice.amount
-            
-        remaining_balance = total_project_cost - amount_billed
-    
-        summary_data = [
-            ['Project Summary', ''],
-            ['Total Project Cost:', f"Rs. {total_project_cost:,.2f}"],
-            ['Amount Billed to Date:', f"Rs. {amount_billed:,.2f}"],
-            ['Remaining Balance:', f"Rs. {remaining_balance:,.2f}"]
-        ]
-        summary_table = Table(summary_data, colWidths=[FLOWABLE_WIDTH * 0.6, FLOWABLE_WIDTH * 0.4])
-        summary_table.setStyle(TableStyle([
-            ('SPAN', (0,0), (1,0)),
-            ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#1e3a8a")),
-            ('FONTSIZE', (0,0), (-1,0), 10),
-            ('BOTTOMPADDING', (0,0), (-1,0), 6),
-            
-            ('ALIGN', (0,1), (0,-1), 'RIGHT'),
-            ('ALIGN', (1,1), (1,-1), 'RIGHT'),
-            ('FONTNAME', (0,1), (1,-2), 'Helvetica'),
-            ('FONTNAME', (0,-1), (1,-1), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0,1), (-1,-2), colors.HexColor("#0a192f")),
-            ('TEXTCOLOR', (0,-1), (-1,-1), colors.HexColor("#1e3a8a")), # Balance in blue
-            ('FONTSIZE', (0,1), (-1,-1), 9),
-            ('TOPPADDING', (0,1), (-1,-1), 4),
-            ('BOTTOMPADDING', (0,1), (-1,-1), 4),
-        ]))
-        elements.append(summary_table)
-    
-    # FOOTER & SIGNATURE
-    elements.append(Spacer(1, 60))
-    
-    # Payment Info and Signature Side-by-side
-    pay_info = Paragraph("<b>Payment Info:</b><br/>A/C Name: IN-TA SOLUTION PVT LTD<br/>Bank: Standard Bank<br/>A/C No: 1234 5678 9012", normal)
-    
-    # Signature Section
-    sig_path = os.path.join(os.path.dirname(__file__), 'signature.png')
-    sig_elements = []
-    if os.path.exists(sig_path):
-        sig_elements.append(Image(sig_path, width=120, height=50, kind='proportional'))
-    else:
-        sig_elements.append(Spacer(1, 40)) # Empty space if no signature uploaded yet
+        enhancements_total = sum(e.cost for e in project.enhancements.all())
+        total_project_cost += enhancements_total
         
-    sig_elements.append(Spacer(1, 10))
-    sig_elements.append(Paragraph("<b>Vijay P N</b>", ParagraphStyle('C', alignment=1, fontSize=10)))
-    sig_elements.append(Paragraph("Managing Director", ParagraphStyle('C', alignment=1, fontSize=8, textColor=colors.HexColor("#64748b"))))
+    desc_text = invoice.description
+    if not desc_text:
+        desc_text = f"Payment for Project: {project.name if project else 'N/A'}"
+        
+    table_data.append([
+        "1", 
+        Paragraph(desc_text.replace('\n', '<br/>'), normal), 
+        "1", 
+        f"{total_project_cost:,.0f}", 
+        f"{total_project_cost:,.0f}"
+    ])
     
-    footer_table = Table([[pay_info, sig_elements]], colWidths=[FLOWABLE_WIDTH * 0.5, FLOWABLE_WIDTH * 0.5])
-    footer_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
-        ('ALIGN', (1,0), (1,0), 'CENTER'),
+    items_table = Table(table_data, colWidths=col_widths)
+    items_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), BRAND_BLUE),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 8),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+        ('ALIGN', (1,0), (1,0), 'LEFT'),
+        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('TOPPADDING', (0,0), (-1,0), 6),
+        
+        ('ALIGN', (0,1), (-1,-1), 'CENTER'),
+        ('ALIGN', (1,1), (1,-1), 'LEFT'),
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,1), (-1,-1), 8),
+        ('TEXTCOLOR', (0,1), (-1,-1), colors.HexColor("#333333")),
+        ('TOPPADDING', (0,1), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+        ('LINEBELOW', (0,1), (-1,-2), 0.5, colors.HexColor("#eeeeee")),
     ]))
     
-    elements.append(footer_table)
+    elements.append(items_table)
+    elements.append(Spacer(1, 40))
     
-    # Build PDF with the background hook
-    doc.build(elements, onFirstPage=draw_background, onLaterPages=draw_background)
+    # ---------------- TOTALS & THANK YOU ----------------
+    thank_you_html = "<br/><br/><br/><br/><font color='#a0a0a0'>________________________________________</font><br/><br/><b>Thank you for doing business with us!</b>"
     
-    pdf_content = buffer.getvalue()
+    totals_data = [
+        ['Amount', f"{invoice.amount:,.0f}"],
+    ]
+    
+    discount = getattr(invoice, 'discount', 0)
+    if discount > 0:
+        totals_data.append(['Discount', f"{discount:,.0f}"])
+        
+    totals_data.append(['GRAND TOTAL :', f"{invoice.amount:,.0f} RS"])
+    
+    totals_subtable = Table(totals_data, colWidths=[100, 80])
+    totals_subtable.setStyle(TableStyle([
+        ('ALIGN', (0,0), (0,-1), 'LEFT'),
+        ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+        ('FONTNAME', (0,0), (-1,-2), 'Helvetica'),
+        ('FONTSIZE', (0,0), (-1,-2), 8),
+        ('TEXTCOLOR', (0,0), (-1,-2), colors.HexColor("#555555")),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        
+        ('BACKGROUND', (0,-1), (-1,-1), BRAND_BLUE),
+        ('TEXTCOLOR', (0,-1), (-1,-1), colors.white),
+        ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,-1), (-1,-1), 8),
+    ]))
+    
+    bottom_table = Table([
+        [Paragraph(thank_you_html, ParagraphStyle('Small', parent=normal, fontSize=8)), totals_subtable]
+    ], colWidths=[PAGE_WIDTH/2 + 20, PAGE_WIDTH/2 - 20 - MARGIN*2])
+    
+    bottom_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+    ]))
+    
+    elements.append(KeepTogether(bottom_table))
+    elements.append(Spacer(1, 40))
+    
+    # ---------------- FOOTER (SEAL & SIGNATURE) ----------------
+    seal_path = os.path.join(settings.BASE_DIR, 'frontend', 'public', 'seal', 'seal__1_-removebg-preview.png')
+    sig_path = os.path.join(os.path.dirname(__file__), 'signature.png')
+    
+    seal_flowable = []
+    if os.path.exists(seal_path):
+        seal_flowable.append(Image(seal_path, width=70, height=70, kind='proportional'))
+    else:
+        seal_flowable.append(Spacer(1, 70))
+    seal_flowable.append(Spacer(1, 5))
+    seal_flowable.append(Paragraph("<b>IN-TA SOLUTIONS</b>", ParagraphStyle('CenterBold', parent=normal, alignment=1, fontSize=9)))
+    
+    sig_flowable = []
+    if os.path.exists(sig_path):
+        sig_flowable.append(Image(sig_path, width=90, height=35, kind='proportional'))
+    else:
+        sig_flowable.append(Spacer(1, 35))
+        
+    sig_flowable.insert(0, Spacer(1, 40)) 
+    sig_flowable.append(Paragraph("<b>Vijay P N</b>", ParagraphStyle('RightBold', parent=normal, alignment=1, fontSize=9)))
+    sig_flowable.append(Paragraph("<font size='7'>Director</font>", ParagraphStyle('Right', parent=normal, alignment=1)))
+    
+    sig_table = Table([
+        [seal_flowable, sig_flowable]
+    ], colWidths=[PAGE_WIDTH/2, PAGE_WIDTH/2 - MARGIN*2])
+    
+    sig_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
+        ('ALIGN', (0,0), (0,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+    ]))
+    
+    elements.append(KeepTogether(sig_table))
+
+    doc.build(elements, onFirstPage=draw_header_footer, onLaterPages=draw_header_footer)
+    
+    pdf = buffer.getvalue()
     buffer.close()
     
-    return pdf_content
+    if invoice.pdf_file:
+        invoice.pdf_file.delete(save=False)
+        
+    file_name = f"Invoice_A{str(invoice.id).zfill(4)}.pdf"
+    invoice.pdf_file.save(file_name, ContentFile(pdf), save=True)
+    
+    return invoice
