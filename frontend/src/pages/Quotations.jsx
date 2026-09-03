@@ -65,7 +65,15 @@ const Quotations = () => {
     });
   };
 
-  const handleItemChange = (id, field, value) => {
+  const handleResize = (e) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = e.target.scrollHeight + 'px';
+  };
+
+  const handleItemChange = (id, field, value, e = null) => {
+    if (e && (field === 'description' || field === 'heading')) {
+      handleResize(e);
+    }
     setQuote({
       ...quote,
       items: quote.items.map(item => 
@@ -294,22 +302,22 @@ const Quotations = () => {
                   {quote.items.map((item, index) => (
                     <tr key={item.id}>
                       <td>
-                        <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <input 
-                            type="text"
+                        <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <textarea 
                             value={item.heading}
-                            onChange={e => handleItemChange(item.id, 'heading', e.target.value)}
+                            onChange={e => handleItemChange(item.id, 'heading', e.target.value, e)}
                             placeholder={`Item ${index + 1} Heading...`}
                             className="print-input"
-                            style={{ width: '100%', fontWeight: 'bold' }}
+                            rows="1"
+                            style={{ width: '100%', fontWeight: 'bold', resize: 'none', overflow: 'hidden', paddingBottom: '0.25rem' }}
                           />
                           <textarea 
                             value={item.description} 
-                            onChange={e => handleItemChange(item.id, 'description', e.target.value)}
+                            onChange={e => handleItemChange(item.id, 'description', e.target.value, e)}
                             placeholder={`Item ${index + 1} Description...`}
-                            rows="2"
+                            rows="1"
                             className="print-input"
-                            style={{ width: '100%', resize: 'vertical' }}
+                            style={{ width: '100%', resize: 'none', overflow: 'hidden', paddingTop: '0.25rem', color: '#475569' }}
                           />
                         </div>
                         <div className="print-only" style={{ whiteSpace: 'pre-wrap' }}>
@@ -342,10 +350,14 @@ const Quotations = () => {
                 </tbody>
               </table>
 
-              <div className="no-print" style={{ padding: '1rem 0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#0f172a', fontWeight: '500' }}>
+              <div className="no-print toggle-container">
+                <div>
+                  <div className="toggle-label-text">Third-Party Integrations</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Include additional costs for APIs and external services</div>
+                </div>
+                <label className="toggle-switch" style={{ marginLeft: 'auto' }}>
                   <input type="checkbox" checked={quote.include_third_party} onChange={e => setQuote({...quote, include_third_party: e.target.checked})} />
-                  Include Third-Party Integration / API Cost Section
+                  <span className="toggle-slider"></span>
                 </label>
               </div>
 
