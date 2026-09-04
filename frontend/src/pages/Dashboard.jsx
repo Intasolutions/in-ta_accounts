@@ -106,7 +106,7 @@ const Dashboard = () => {
 
   // Pending Project Balance (Total Contract Value - Total Paid) for all ACTIVE projects
   const pendingProjectBalance = useMemo(() => {
-    return projects.filter(p => p.status !== 'COMPLETED').reduce((total, p) => {
+    return projects.reduce((total, p) => {
       const pInvoices = invoices.filter(i => i.project === p.id && i.status === 'PAID');
       const rev = pInvoices.reduce((sum, curr) => sum + parseFloat(curr.amount), 0);
       const pending = parseFloat(p.total_value || 0) - rev;

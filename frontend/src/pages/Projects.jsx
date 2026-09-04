@@ -377,18 +377,7 @@ const Projects = () => {
                       ]}
                     />
                   </div>
-                  <div className="form-group">
-                    <label>Status</label>
-                    <CustomSelect 
-                      required
-                      value={newProject.status} 
-                      onChange={val => setNewProject({...newProject, status: val})} 
-                      options={[
-                        { value: 'ACTIVE', label: 'Active' },
-                        { value: 'COMPLETED', label: 'Completed' }
-                      ]}
-                    />
-                  </div>
+
                   {newProject.project_type === 'REVENUE_SHARE' && (
                     <>
                       <div className="form-group">
@@ -442,7 +431,7 @@ const Projects = () => {
                     <th>Project Name</th>
                     <th>Client</th>
                     <th>Value / Type</th>
-                    <th>Status</th>
+
                     <th>Created</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -455,18 +444,7 @@ const Projects = () => {
                       <td className="strong" style={{ color: p.project_type === 'REVENUE_SHARE' ? 'var(--info)' : 'var(--success)' }} data-label="Value / Type">
                         {p.project_type === 'REVENUE_SHARE' ? 'Revenue Share' : formatCurrency(p.total_value)}
                       </td>
-                      <td data-label="Status">
-                        <span style={{ 
-                          padding: '0.2rem 0.6rem', 
-                          borderRadius: '12px', 
-                          fontSize: '0.75rem', 
-                          fontWeight: 'bold', 
-                          background: p.status === 'COMPLETED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)', 
-                          color: p.status === 'COMPLETED' ? 'var(--success)' : 'var(--primary-color)' 
-                        }}>
-                          {p.status === 'COMPLETED' ? 'Completed' : 'Active'}
-                        </span>
-                      </td>
+
                       <td data-label="Created">{new Date(p.created_at).toLocaleDateString()}</td>
                       <td data-label="Actions">
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
@@ -483,7 +461,7 @@ const Projects = () => {
                       </td>
                     </tr>
                   ))}
-                  {projectsPagination.currentData.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No projects found.</td></tr>}
+                  {projectsPagination.currentData.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No projects found.</td></tr>}
                 </tbody>
               </table>
               <Pagination {...projectsPagination} />

@@ -248,7 +248,7 @@ const Quotations = () => {
           <button 
             className="no-print btn"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, padding: '0.5rem', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderRadius: '50%' }}
+            style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, padding: '0.5rem', background: '#fff', color: '#0f172a', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderRadius: '50%' }}
             title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
           >
             {isSidebarOpen ? <ChevronLeft size={18}/> : <ChevronRight size={18}/>}
