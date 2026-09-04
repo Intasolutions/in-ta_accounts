@@ -33,6 +33,7 @@ const Dashboard = () => {
 
   // Raw Data (All-time)
   const [invoices, setInvoices] = useState([]);
+  const [allInvoices, setAllInvoices] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [projects, setProjects] = useState([]);
   const [renewals, setRenewals] = useState([]);
@@ -58,6 +59,7 @@ const Dashboard = () => {
       const filteredInvs = invRes.data.filter(i => new Date(i.date) >= SYSTEM_START_DATE);
       const filteredExps = expRes.data.filter(e => new Date(e.date) >= SYSTEM_START_DATE);
 
+      setAllInvoices(invRes.data);
       setInvoices(filteredInvs);
       setExpenses(filteredExps);
       setProjects(projRes.data);
@@ -104,15 +106,19 @@ const Dashboard = () => {
     return invoices.filter(i => i.status === 'SENT').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
   }, [invoices]);
 
-  // Pending Project Balance (Total Contract Value - Total Paid) for all ACTIVE projects
+  // Pending Project Balance (Total Contract Value - Total Paid) for all projects
   const pendingProjectBalance = useMemo(() => {
     return projects.reduce((total, p) => {
-      const pInvoices = invoices.filter(i => i.project === p.id && i.status === 'PAID');
+      const enhancements = p.enhancements || [];
+      const totalEnhancementValue = enhancements.reduce((sum, e) => sum + parseFloat(e.cost || 0), 0);
+      const projectTotalValue = parseFloat(p.total_value || 0) + totalEnhancementValue;
+
+      const pInvoices = allInvoices.filter(i => i.project === p.id && i.status === 'PAID');
       const rev = pInvoices.reduce((sum, curr) => sum + parseFloat(curr.amount), 0);
-      const pending = parseFloat(p.total_value || 0) - rev;
+      const pending = projectTotalValue - rev;
       return total + (pending > 0 ? pending : 0);
     }, 0);
-  }, [projects, invoices]);
+  }, [projects, allInvoices]);
 
   const upcomingLiabilities = useMemo(() => {
     const today = new Date();
