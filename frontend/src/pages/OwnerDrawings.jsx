@@ -21,8 +21,11 @@ const OwnerDrawings = () => {
   const [showForm, setShowForm] = useState(false);
   const [newDraw, setNewDraw] = useState({
     amount: '',
-    purpose: ''
+    purpose: '',
+    owner: ''
   });
+
+  const [owners, setOwners] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -36,10 +39,14 @@ const OwnerDrawings = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const drawRes = await api.get('owner-draws/');
+      const [drawRes, bankRes, usersRes] = await Promise.all([
+        api.get('owner-draws/'),
+        api.get('bank-accounts/'),
+        api.get('users/')
+      ]);
       setDrawings(drawRes.data);
-      const bankRes = await api.get('bank-accounts/');
       setBankAccounts(bankRes.data);
+      setOwners(usersRes.data.filter(u => u.role === 'OWNER'));
     } catch (err) {
       console.error(err);
     } finally {
@@ -49,13 +56,18 @@ const OwnerDrawings = () => {
 
   const handleRequestDraw = async (e) => {
     e.preventDefault();
+    if (user.role === 'ACCOUNTANT' && !newDraw.owner) {
+      toast.error('Please select an owner.');
+      return;
+    }
+    
     try {
       await api.post('owner-draws/', {
         ...newDraw,
-        owner: user.id
+        owner: user.role === 'ACCOUNTANT' ? newDraw.owner : user.id
       });
       setShowForm(false);
-      setNewDraw({ amount: '', purpose: '' });
+      setNewDraw({ amount: '', purpose: '', owner: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -136,6 +148,17 @@ const OwnerDrawings = () => {
       {showForm && (
         <div className="card" style={{ marginBottom: '2rem', animation: 'fadeIn 0.3s ease' }}>
           <form onSubmit={handleRequestDraw} style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            {user.role === 'ACCOUNTANT' && (
+              <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
+                <label>Select Owner</label>
+                <CustomSelect 
+                  required
+                  value={newDraw.owner} 
+                  onChange={val => setNewDraw({...newDraw, owner: val})} 
+                  options={owners.map(o => ({ value: o.id, label: o.username }))}
+                />
+              </div>
+            )}
             <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
               <label>Amount Requested (₹)</label>
               <input type="number" step="0.01" required value={newDraw.amount} onChange={e => setNewDraw({...newDraw, amount: e.target.value})} placeholder="0.00" style={{ fontSize: '1.25rem', padding: '1rem' }} />
