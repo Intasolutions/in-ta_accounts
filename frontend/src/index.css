@@ -1118,7 +1118,7 @@ input:checked + .toggle-slider:before {
   /* Target the split panes in Quotations to allow them to expand */
   .quotation-page, 
   .quotation-page > div, 
-  .quotation-page > div > div {
+  .quotation-page > div > div:not(.no-print) {
     height: auto !important;
     overflow: visible !important;
     display: block !important;
@@ -1126,7 +1126,7 @@ input:checked + .toggle-slider:before {
   }
 
   /* Hide UI elements cleanly */
-  .sidebar, .page-header, .no-print {
+  .sidebar, .page-header, .layout-header, .no-print {
     display: none !important;
   }
 
