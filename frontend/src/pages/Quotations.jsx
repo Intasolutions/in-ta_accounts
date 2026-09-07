@@ -45,6 +45,7 @@ const Quotations = () => {
   });
 
   const [quote, setQuote] = useState(() => createDefaultQuote());
+  const [editingQuoteId, setEditingQuoteId] = useState(null);
 
   useEffect(() => {
     fetchQuotations();
@@ -126,8 +127,15 @@ const Quotations = () => {
         raw_data: quote
       };
 
-      await api.post('quotations/', payload);
-      toast.success('Quotation saved successfully!');
+      if (editingQuoteId) {
+        await api.put(`quotations/${editingQuoteId}/`, payload);
+        toast.success('Quotation updated successfully!');
+      } else {
+        const res = await api.post('quotations/', payload);
+        setEditingQuoteId(res.data.id);
+        toast.success('Quotation created successfully!');
+      }
+      
       fetchQuotations();
       // Don't reset quote after saving, so user can print it easily
     } catch (err) {
@@ -142,6 +150,7 @@ const Quotations = () => {
 
   const handlePrintQuote = (q) => {
     setQuote(q.raw_data);
+    setEditingQuoteId(q.id);
     setTimeout(() => {
       window.print();
     }, 100);
@@ -149,6 +158,12 @@ const Quotations = () => {
 
   const handleView = (q) => {
     setQuote(q.raw_data);
+    setEditingQuoteId(q.id);
+  };
+
+  const handleNewQuote = () => {
+    setQuote(createDefaultQuote(quotations));
+    setEditingQuoteId(null);
   };
 
   const handleDelete = async (id) => {
@@ -190,7 +205,7 @@ const Quotations = () => {
             <h2 style={{ margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>
               <Calculator size={18} /> Saved Quotes
             </h2>
-            <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={() => setQuote(createDefaultQuote(quotations))}>
+            <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={handleNewQuote}>
               <Plus size={16} /> New
             </button>
           </div>
