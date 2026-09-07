@@ -1105,33 +1105,46 @@ input:checked + .toggle-slider:before {
     size: A4 portrait;
   }
   
-  body * {
-    visibility: hidden;
+  /* Reset heights and overflow to allow natural browser pagination */
+  html, body, #root, .app-container, .main-content {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    display: block !important;
+    background: white !important;
   }
-  
-  .print-area, .print-area * {
-    visibility: visible;
+
+  /* Target the split panes in Quotations to allow them to expand */
+  .quotation-page, 
+  .quotation-page > div, 
+  .quotation-page > div > div {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
   }
-  
+
+  /* Hide UI elements cleanly */
+  .sidebar, .page-header, .no-print {
+    display: none !important;
+  }
+
+  /* Reset the print area so it flows naturally */
   .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 1cm;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
   }
   
   .quote-document {
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-    border-radius: 0;
-    max-width: 100%;
-  }
-  
-  .no-print {
-    display: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    border: none !important;
   }
   
   .print-only {
