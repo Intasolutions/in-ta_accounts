@@ -20,7 +20,10 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
       }
     };
     
-    const handleScroll = () => {
+    const handleScroll = (event) => {
+      if (menuRef.current && menuRef.current.contains(event.target)) {
+        return;
+      }
       if (isOpen) {
         setIsOpen(false);
       }
