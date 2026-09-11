@@ -117,7 +117,7 @@ const Invoices = () => {
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       window.open(url, '_blank');
       // Cleanup slightly delayed to allow browser to open it
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
     } catch (error) {
       console.error('Error downloading PDF', error);
       toast.error('Failed to generate PDF. Please try again.');

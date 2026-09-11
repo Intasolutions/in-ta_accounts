@@ -171,7 +171,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def download_pdf(self, request, pk=None):
         invoice = self.get_object()
-        pdf_bytes = generate_invoice_pdf(invoice)
+        invoice = generate_invoice_pdf(invoice)
+        
+        pdf_bytes = invoice.pdf_file.read()
         
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         filename = f"INV_{invoice.id}_{invoice.date.strftime('%Y%m%d')}.pdf"
