@@ -23,7 +23,7 @@ class CustomRolePermission(permissions.BasePermission):
             view_name = view.__class__.__name__
 
             # Specific restricted write actions for Owner
-            allowed_write_views = ['CompanyExpenseViewSet', 'AdvanceRequestViewSet', 'OwnerDrawViewSet']
+            allowed_write_views = ['CompanyExpenseViewSet', 'AdvanceRequestViewSet', 'OwnerDrawViewSet', 'QuotationViewSet']
 
             if view_name in allowed_write_views:
                 # Restrict custom action calls that modify status or transfer money

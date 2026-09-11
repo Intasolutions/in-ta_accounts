@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 
 const CustomSelect = ({ value, onChange, options, placeholder = "Select...", className = "", required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({});
@@ -36,6 +37,13 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
     };
   }, [isOpen]);
 
+  // Reset search term when closed
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  }, [isOpen]);
+
   // Update position when opened
   useEffect(() => {
     if (isOpen && dropdownRef.current) {
@@ -58,6 +66,10 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
   }, [isOpen]);
 
   const selectedOption = options.find(opt => String(opt.value) === String(value));
+
+  const filteredOptions = options.filter(opt => 
+    opt?.label?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className={`custom-select-wrapper ${className}`} ref={dropdownRef} style={{ position: 'relative', width: '100%', minWidth: '160px' }}>
@@ -101,9 +113,32 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
           className="custom-select-menu"
           style={menuStyle}
         >
-          {options.map((opt, index) => {
-            const isSelected = String(opt.value) === String(value);
-            return (
+          <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--surface-border)', position: 'sticky', top: 0, background: 'var(--bg-color)', zIndex: 1, borderRadius: '0.75rem 0.75rem 0 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem', padding: '0.4rem 0.6rem' }}>
+              <Search size={14} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+                autoFocus
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'var(--text-main)',
+                  width: '100%',
+                  fontSize: '0.85rem'
+                }}
+              />
+            </div>
+          </div>
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt, index) => {
+              const isSelected = String(opt.value) === String(value);
+              return (
               <div
                 key={index}
                 onClick={() => {
@@ -128,8 +163,13 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opt.label}</span>
                 {isSelected && <Check size={14} />}
               </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No results found
+            </div>
+          )}
         </div>,
         document.body
       )}

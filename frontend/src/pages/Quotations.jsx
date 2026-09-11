@@ -51,13 +51,13 @@ const Quotations = () => {
     fetchQuotations();
   }, []);
 
-  const fetchQuotations = async () => {
+  const fetchQuotations = async (currentEditingId = editingQuoteId) => {
     setLoading(true);
     try {
       const res = await api.get('quotations/');
       setQuotations(res.data);
-      if (quote.quote_no.startsWith('QT-') && quote.quote_no.length > 5) {
-        // Only update if user hasn't manually started typing a completely custom one
+      // Only set a new default quote if we are NOT currently editing a saved quote
+      if (!currentEditingId && quote.quote_no.startsWith('QT-') && quote.quote_no.length > 5) {
         setQuote(createDefaultQuote(res.data));
       }
     } catch (err) {
@@ -130,13 +130,14 @@ const Quotations = () => {
       if (editingQuoteId) {
         await api.put(`quotations/${editingQuoteId}/`, payload);
         toast.success('Quotation updated successfully!');
+        fetchQuotations(editingQuoteId);
       } else {
         const res = await api.post('quotations/', payload);
         setEditingQuoteId(res.data.id);
         toast.success('Quotation created successfully!');
+        fetchQuotations(res.data.id);
       }
       
-      fetchQuotations();
       // Don't reset quote after saving, so user can print it easily
     } catch (err) {
       console.error(err);
@@ -149,7 +150,13 @@ const Quotations = () => {
   };
 
   const handlePrintQuote = (q) => {
-    setQuote(q.raw_data);
+    const defaultQuote = createDefaultQuote();
+    const rawData = q.raw_data || {};
+    setQuote({
+      ...defaultQuote,
+      ...rawData,
+      items: rawData.items || defaultQuote.items
+    });
     setEditingQuoteId(q.id);
     setTimeout(() => {
       window.print();
@@ -157,7 +164,13 @@ const Quotations = () => {
   };
 
   const handleView = (q) => {
-    setQuote(q.raw_data);
+    const defaultQuote = createDefaultQuote();
+    const rawData = q.raw_data || {};
+    setQuote({
+      ...defaultQuote,
+      ...rawData,
+      items: rawData.items || defaultQuote.items
+    });
     setEditingQuoteId(q.id);
   };
 
