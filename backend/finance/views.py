@@ -282,7 +282,7 @@ class CompanyExpenseViewSet(viewsets.ModelViewSet):
         if receipt_file:
             try:
                 from .gdrive import upload_receipt_to_drive
-                link = upload_receipt_to_drive(receipt_file, receipt_file.name, expense.payee_description)
+                link = upload_receipt_to_drive(receipt_file, receipt_file.name, expense.date)
                 expense.receipt_drive_link = link
                 expense.save()
             except Exception as e:

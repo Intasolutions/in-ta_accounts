@@ -22,7 +22,8 @@ const OwnerDrawings = () => {
   const [newDraw, setNewDraw] = useState({
     amount: '',
     purpose: '',
-    owner: ''
+    owner: '',
+    date: new Date().toISOString().split('T')[0]
   });
 
   const [owners, setOwners] = useState([]);
@@ -67,7 +68,7 @@ const OwnerDrawings = () => {
         owner: user.role === 'ACCOUNTANT' ? newDraw.owner : user.id
       });
       setShowForm(false);
-      setNewDraw({ amount: '', purpose: '', owner: '' });
+      setNewDraw({ amount: '', purpose: '', owner: '', date: new Date().toISOString().split('T')[0] });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -172,6 +173,10 @@ const OwnerDrawings = () => {
             <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
               <label>Amount Requested (₹)</label>
               <input type="number" step="0.01" required value={newDraw.amount} onChange={e => setNewDraw({...newDraw, amount: e.target.value})} placeholder="0.00" style={{ fontSize: '1.25rem', padding: '1rem' }} />
+            </div>
+            <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
+              <label>Date</label>
+              <input type="date" required value={newDraw.date} onChange={e => setNewDraw({...newDraw, date: e.target.value})} max={new Date().toISOString().split('T')[0]} style={{ fontSize: '1.25rem', padding: '1rem' }} />
             </div>
             <div className="form-group" style={{ flex: '2 1 300px', marginBottom: 0 }}>
               <label>Purpose / Note</label>

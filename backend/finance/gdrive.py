@@ -36,25 +36,29 @@ def get_or_create_folder(service, folder_name, parent_id):
     else:
         return items[0].get('id')
 
-def upload_receipt_to_drive(file_obj, filename, payee_name):
+def upload_receipt_to_drive(file_obj, filename, expense_date):
     service = get_drive_service()
     root_folder_id = getattr(settings, 'GOOGLE_DRIVE_ROOT_FOLDER_ID', None)
     
     if not root_folder_id:
         raise Exception("GOOGLE_DRIVE_ROOT_FOLDER_ID is not configured in settings.py.")
 
-    # Sanitize payee name for folder
-    safe_payee_name = "".join([c if c.isalnum() else "_" for c in payee_name]).strip("_")
-    if not safe_payee_name:
-        safe_payee_name = "Unknown_Payee"
+    # Use expense date for folder name (Format: September 2026)
+    try:
+        folder_name = expense_date.strftime("%B %Y")
+    except AttributeError:
+        folder_name = str(expense_date)
         
-    # Get or create payee folder
-    payee_folder_id = get_or_create_folder(service, safe_payee_name, root_folder_id)
+    if not folder_name:
+        folder_name = "Unknown_Date"
+        
+    # Get or create date folder
+    target_folder_id = get_or_create_folder(service, folder_name, root_folder_id)
     
     # Upload file
     file_metadata = {
         'name': filename,
-        'parents': [payee_folder_id]
+        'parents': [target_folder_id]
     }
     
     media = MediaIoBaseUpload(io.BytesIO(file_obj.read()), mimetype=file_obj.content_type, resumable=True)
