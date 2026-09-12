@@ -244,6 +244,19 @@ class OwnerDraw(models.Model):
     def __str__(self):
         return f"{self.owner.username} - {self.amount} ({self.status})"
 
+class OwnerRepayment(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='repayments')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    purpose = models.CharField(max_length=255)
+    date = models.DateTimeField(default=timezone.now)
+    logged_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='logged_repayments')
+
+    class Meta:
+        ordering = ['-date', '-id']
+
+    def __str__(self):
+        return f"{self.owner.username} Repayment - {self.amount}"
+
 class Transaction(models.Model):
     TYPE_CHOICES = (
         ('INVOICE_PAYMENT', 'Invoice Payment'),

@@ -8,11 +8,11 @@ from django.http import HttpResponse
 from decimal import Decimal
 from django.core.mail import send_mail
 from django.db.models import Sum
-from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, RevenueShareScope, Quotation
+from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, OwnerRepayment, RevenueShareScope, Quotation
 from .serializers import (
     UserSerializer, ClientSerializer, ProjectSerializer, 
     InvoiceSerializer, AdvanceWalletSerializer, AdvanceRequestSerializer, CompanyExpenseSerializer, MonthLockSerializer,
-    EnhancementSerializer, RenewalSerializer, BankAccountSerializer, TransactionSerializer, OwnerDrawSerializer, RevenueShareScopeSerializer,
+    EnhancementSerializer, RenewalSerializer, BankAccountSerializer, TransactionSerializer, OwnerDrawSerializer, OwnerRepaymentSerializer, RevenueShareScopeSerializer,
     QuotationSerializer
 )
 from .utils.invoice_generator import generate_invoice_pdf
@@ -459,3 +459,10 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(created_by=self.request.user if self.request.user.is_authenticated else None)
+
+class OwnerRepaymentViewSet(viewsets.ModelViewSet):
+    queryset = OwnerRepayment.objects.all().order_by('-date')
+    serializer_class = OwnerRepaymentSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(logged_by=self.request.user if self.request.user.is_authenticated else None)

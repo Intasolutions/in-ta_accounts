@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet, ClientViewSet, ProjectViewSet, 
     InvoiceViewSet, AdvanceWalletViewSet, AdvanceRequestViewSet, CompanyExpenseViewSet, MonthLockViewSet,
-    EnhancementViewSet, RenewalViewSet, BankAccountViewSet, TransactionViewSet, OwnerDrawViewSet,
+    EnhancementViewSet, RenewalViewSet, BankAccountViewSet, TransactionViewSet, OwnerDrawViewSet, OwnerRepaymentViewSet,
     PasswordResetDirectView, CheckEmailView, RevenueShareScopeViewSet, QuotationViewSet
 )
 
@@ -22,6 +22,7 @@ router.register(r'enhancements', EnhancementViewSet)
 router.register(r'renewals', RenewalViewSet)
 router.register(r'transactions', TransactionViewSet, basename='transaction')
 router.register(r'owner-draws', OwnerDrawViewSet, basename='ownerdraw')
+router.register(r'owner-repayments', OwnerRepaymentViewSet, basename='ownerrepayment')
 router.register(r'quotations', QuotationViewSet, basename='quotation')
 
 urlpatterns = [
