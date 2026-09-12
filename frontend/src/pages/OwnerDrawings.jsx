@@ -46,7 +46,7 @@ const OwnerDrawings = () => {
       ]);
       setDrawings(drawRes.data);
       setBankAccounts(bankRes.data);
-      setOwners(usersRes.data.filter(u => u.role === 'OWNER'));
+      setOwners(usersRes.data.filter(u => u.role === 'OWNER' || u.role === 'ACCOUNTANT'));
     } catch (err) {
       console.error(err);
     } finally {
@@ -106,10 +106,6 @@ const OwnerDrawings = () => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0);
   };
 
-  const totalWithdrawn = drawings
-    .filter(d => d.status === 'APPROVED')
-    .reduce((sum, d) => sum + parseFloat(d.amount), 0);
-
   const filteredDrawings = drawings.filter(d => 
     d.purpose.toLowerCase().includes(searchQuery.toLowerCase()) || 
     d.owner_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -126,23 +122,37 @@ const OwnerDrawings = () => {
         <h1 className="page-title gradient-text">Owner's Equity & Drawings</h1>
       </div>
 
-      <div className="glass-panel" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2))', padding: '1rem', borderRadius: '1rem', color: '#a78bfa' }}>
-            <Gem size={32} />
-          </div>
-          <div>
-            <p style={{ margin: 0, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.85rem' }}>Total Personal Withdrawals</p>
-            <h2 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '700' }}>{formatCurrency(totalWithdrawn)}</h2>
-          </div>
+      <div className="glass-panel" style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.25rem' }}>Member Credit Accounts</h3>
+          <button 
+            className="btn btn-primary" 
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', fontSize: '1rem' }}
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? <><X size={18} /> Cancel</> : <><Plus size={18} /> Request Funds</>}
+          </button>
         </div>
-        <button 
-          className="btn btn-primary" 
-          style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', border: 'none', padding: '1rem 2rem', borderRadius: '0.75rem', fontSize: '1.1rem' }}
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? <><X size={20} /> Cancel</> : <><Plus size={20} /> Request Funds</>}
-        </button>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
+          {owners.map(owner => {
+            const memberTotal = drawings
+              .filter(d => d.owner === owner.id && d.status === 'APPROVED')
+              .reduce((sum, d) => sum + parseFloat(d.amount), 0);
+              
+            return (
+              <div key={owner.id} style={{ flex: '1 1 250px', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2))', padding: '1rem', borderRadius: '1rem', color: '#a78bfa' }}>
+                  <Gem size={24} />
+                </div>
+                <div>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.75rem', fontWeight: 'bold' }}>{owner.username} Credit</p>
+                  <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>{formatCurrency(memberTotal)}</h2>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {showForm && (

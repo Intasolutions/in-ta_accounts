@@ -407,9 +407,6 @@ class OwnerDrawViewSet(viewsets.ModelViewSet):
     serializer_class = OwnerDrawSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        if user.is_authenticated and user.role == 'OWNER':
-            return OwnerDraw.objects.filter(owner=user).order_by('-date')
         return OwnerDraw.objects.all().order_by('-date')
 
     @action(detail=True, methods=['post'])

@@ -414,6 +414,10 @@ const Expenses = () => {
                   <label>Amount (₹)</label>
                   <input type="number" step="0.01" required value={newExpense.amount} onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })} placeholder="0.00" />
                 </div>
+                <div className="form-group">
+                  <label>Date</label>
+                  <input type="date" required value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })} max={new Date().toISOString().split('T')[0]} />
+                </div>
                 {newExpense.expense_type === 'DIRECT' && (
                   <div className="form-group">
                     <label>Paid From Bank Account</label>

@@ -82,7 +82,7 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
           required={required} 
           value={value || ''} 
           onChange={() => {}} 
-          style={{ opacity: 0, position: 'absolute', zIndex: -1, width: '1px', height: '1px', bottom: 0, left: '50%' }} 
+          style={{ opacity: 0, position: 'absolute', zIndex: -1, width: '1px', height: '1px', bottom: 0, left: '50%', pointerEvents: 'none' }} 
         />
       )}
       <div 
