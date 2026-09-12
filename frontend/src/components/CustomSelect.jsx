@@ -101,13 +101,14 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
           fontSize: '0.85rem',
           fontWeight: 500,
           transition: 'all 0.2s ease',
-          boxShadow: isOpen ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none'
+          boxShadow: isOpen ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+          width: '100%'
         }}
       >
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', pointerEvents: 'none' }}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+        <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', pointerEvents: 'none' }} />
       </div>
 
       {isOpen && typeof document !== 'undefined' && createPortal(
