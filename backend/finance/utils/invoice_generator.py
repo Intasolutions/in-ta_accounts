@@ -210,7 +210,7 @@ def generate_invoice_pdf(invoice):
     elements.append(Spacer(1, 40))
     
     # ---------------- TOTALS & THANK YOU ----------------
-    thank_you_html = "<br/><br/><br/><br/><font color='#a0a0a0'>________________________________________</font><br/><br/><b>Thank you for doing business with us!</b>"
+    thank_you_html = "<font color='#a0a0a0'>________________________________________</font><br/><br/><b>Thank you for doing business with us!</b>"
     
     totals_data = [
         ['Amount', f"{invoice.amount:,.0f}"],
@@ -248,10 +248,10 @@ def generate_invoice_pdf(invoice):
     ]))
     
     elements.append(KeepTogether(bottom_table))
-    elements.append(Spacer(1, 40))
+    elements.append(Spacer(1, 20))
     
     # ---------------- FOOTER (SEAL & SIGNATURE) ----------------
-    seal_path = os.path.join(settings.BASE_DIR, 'frontend', 'public', 'seal', 'seal__1_-removebg-preview.png')
+    seal_path = os.path.join(str(settings.BASE_DIR.parent), 'frontend', 'public', 'seal', 'seal__1_-removebg-preview.png')
     sig_path = os.path.join(os.path.dirname(__file__), 'signature.png')
     
     seal_flowable = []
