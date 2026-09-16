@@ -138,10 +138,10 @@ def generate_invoice_pdf(invoice):
     invoice_no = f"INV-{str(invoice.id).zfill(3)}"
     date_str = invoice.date.strftime('%d %B %Y')
     
+    primary_name = client_company if client_company else client_name
+    
     client_info_html = f"<font color='#555555' size='8'>Invoice to :</font><br/>"
-    client_info_html += f"<font size='12'><b>{client_name}</b></font><br/>"
-    if client_company:
-        client_info_html += f"{client_company}<br/>"
+    client_info_html += f"<font size='12'><b>{primary_name}</b></font><br/>"
     if client_phone:
         client_info_html += f"<font color='#777777'>{client_phone}</font><br/>"
     if client_address:
@@ -210,8 +210,24 @@ def generate_invoice_pdf(invoice):
     elements.append(items_table)
     elements.append(Spacer(1, 40))
     
-    # ---------------- TOTALS & THANK YOU ----------------
-    thank_you_html = "<br/><b>Thank you for doing business with us!</b>"
+    # ---------------- TOTALS & BANK DETAILS ----------------
+    bank_account = invoice.deposit_account
+    if not bank_account:
+        from finance.models import BankAccount
+        bank_account = BankAccount.objects.first()
+        
+    left_html = "<br/><b>Thank you for doing business with us!</b><br/><br/>"
+    left_html += "<font size='8' color='#555555'><b>Bank Details:</b><br/>"
+    if bank_account:
+        left_html += f"Account Name: {bank_account.name}<br/>"
+        if bank_account.bank_name:
+            left_html += f"Bank: {bank_account.bank_name}<br/>"
+        if bank_account.account_number:
+            left_html += f"A/C No: {bank_account.account_number}<br/>"
+        if bank_account.ifsc_code:
+            left_html += f"IFSC: {bank_account.ifsc_code}<br/>"
+    
+    left_html += "<br/><b>TAN Number:</b> AAIC1010K</font>"
     
     totals_data = [
         ['Amount', f"{invoice.amount:,.0f}"],
@@ -240,7 +256,7 @@ def generate_invoice_pdf(invoice):
     ]))
     
     bottom_table = Table([
-        [Paragraph(thank_you_html, ParagraphStyle('Small', parent=normal, fontSize=8)), totals_subtable]
+        [Paragraph(left_html, ParagraphStyle('Small', parent=normal, fontSize=8)), totals_subtable]
     ], colWidths=[PAGE_WIDTH/2 + 20, PAGE_WIDTH/2 - 20 - MARGIN*2])
     
     bottom_table.setStyle(TableStyle([
