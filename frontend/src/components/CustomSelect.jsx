@@ -7,6 +7,7 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const inputRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({});
 
   // Handle outside click and scroll
@@ -65,6 +66,12 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
         overflowY: 'auto',
         boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)'
       });
+      
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus({ preventScroll: true });
+        }
+      }, 10);
     }
   }, [isOpen]);
 
@@ -121,13 +128,13 @@ const CustomSelect = ({ value, onChange, options, placeholder = "Select...", cla
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem', padding: '0.4rem 0.6rem' }}>
               <Search size={14} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />
               <input 
+                ref={inputRef}
                 type="text" 
                 placeholder="Search..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => e.stopPropagation()}
-                autoFocus
                 style={{
                   background: 'transparent',
                   border: 'none',

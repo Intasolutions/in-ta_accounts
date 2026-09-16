@@ -172,10 +172,6 @@ def generate_invoice_pdf(invoice):
     ]
     
     project = invoice.project
-    total_project_cost = project.total_value if project else invoice.amount
-    if project:
-        enhancements_total = sum(e.cost for e in project.enhancements.all())
-        total_project_cost += enhancements_total
         
     desc_text = invoice.description
     if not desc_text:
@@ -185,8 +181,8 @@ def generate_invoice_pdf(invoice):
         "1", 
         Paragraph(desc_text.replace('\n', '<br/>'), normal), 
         "1", 
-        f"{total_project_cost:,.0f}", 
-        f"{total_project_cost:,.0f}"
+        f"{invoice.amount:,.0f}", 
+        f"{invoice.amount:,.0f}"
     ])
     
     items_table = Table(table_data, colWidths=col_widths)
