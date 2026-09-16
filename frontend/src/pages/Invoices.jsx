@@ -26,7 +26,8 @@ const Invoices = () => {
     amount: '',
     date: new Date().toISOString().split('T')[0],
     status: 'DRAFT',
-    deposit_account: ''
+    deposit_account: '',
+    description: ''
   });
 
   useEffect(() => {
@@ -85,7 +86,8 @@ const Invoices = () => {
       amount: invoice.amount,
       date: invoice.date,
       status: invoice.status,
-      deposit_account: invoice.deposit_account || ''
+      deposit_account: invoice.deposit_account || '',
+      description: invoice.description || ''
     });
     setShowForm(true);
   };
@@ -103,7 +105,7 @@ const Invoices = () => {
   };
 
   const resetForm = () => {
-    setNewInvoice({ project: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'DRAFT', deposit_account: '', payment_type: 'PARTIAL' });
+    setNewInvoice({ project: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'DRAFT', deposit_account: '', payment_type: 'PARTIAL', description: '' });
     setEditingInvoice(null);
     setEditingInvoice(null);
     setShowForm(false);
@@ -184,6 +186,10 @@ const Invoices = () => {
               <div className="form-group">
                 <label>Amount (Flat ₹)</label>
                 <input type="number" step="0.01" required value={newInvoice.amount} onChange={e => setNewInvoice({...newInvoice, amount: e.target.value})} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Description (Optional)</label>
+                <input type="text" value={newInvoice.description} onChange={e => setNewInvoice({...newInvoice, description: e.target.value})} placeholder="Custom text for PDF Invoice..." />
               </div>
               <div className="form-group">
                 <label>Payment Type</label>
