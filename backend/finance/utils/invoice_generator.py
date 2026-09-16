@@ -45,10 +45,10 @@ def draw_header_footer(canvas, doc):
     text_width = canvas.stringWidth(invoice_text, "Helvetica-Bold", 32)
     canvas.drawString(PAGE_WIDTH - 40 - text_width, PAGE_HEIGHT - 70, invoice_text)
     
-    # Gradient/Colored line under invoice
-    canvas.setStrokeColor(BRAND_BLUE)
-    canvas.setLineWidth(2)
-    canvas.line(100, PAGE_HEIGHT - 95, 380, PAGE_HEIGHT - 95)
+    # Subtle line under invoice header
+    canvas.setStrokeColor(colors.HexColor("#e5e7eb"))
+    canvas.setLineWidth(1)
+    canvas.line(40, PAGE_HEIGHT - 95, PAGE_WIDTH - 40, PAGE_HEIGHT - 95)
     
     # Website Text
     canvas.setFont("Helvetica", 9)
@@ -198,19 +198,20 @@ def generate_invoice_pdf(invoice):
         
         ('ALIGN', (0,1), (-1,-1), 'CENTER'),
         ('ALIGN', (1,1), (1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
         ('FONTSIZE', (0,1), (-1,-1), 8),
         ('TEXTCOLOR', (0,1), (-1,-1), colors.HexColor("#333333")),
-        ('TOPPADDING', (0,1), (-1,-1), 8),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
-        ('LINEBELOW', (0,1), (-1,-2), 0.5, colors.HexColor("#eeeeee")),
+        ('TOPPADDING', (0,1), (-1,-1), 12),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 12),
+        ('LINEBELOW', (0,1), (-1,-1), 0.5, colors.HexColor("#eeeeee")),
     ]))
     
     elements.append(items_table)
     elements.append(Spacer(1, 40))
     
     # ---------------- TOTALS & THANK YOU ----------------
-    thank_you_html = "<font color='#a0a0a0'>________________________________________</font><br/><br/><b>Thank you for doing business with us!</b>"
+    thank_you_html = "<br/><b>Thank you for doing business with us!</b>"
     
     totals_data = [
         ['Amount', f"{invoice.amount:,.0f}"],
@@ -260,7 +261,7 @@ def generate_invoice_pdf(invoice):
     else:
         seal_flowable.append(Spacer(1, 70))
     seal_flowable.append(Spacer(1, 5))
-    seal_flowable.append(Paragraph("<b>IN-TA SOLUTIONS</b>", ParagraphStyle('CenterBold', parent=normal, alignment=1, fontSize=9)))
+    seal_flowable.append(Paragraph("<b>IN-TA SOLUTIONS</b>", ParagraphStyle('LeftBold', parent=normal, alignment=0, fontSize=9)))
     
     sig_flowable = []
     if os.path.exists(sig_path):
@@ -269,8 +270,8 @@ def generate_invoice_pdf(invoice):
         sig_flowable.append(Spacer(1, 35))
         
     sig_flowable.insert(0, Spacer(1, 40)) 
-    sig_flowable.append(Paragraph("<b>Vijay P N</b>", ParagraphStyle('RightBold', parent=normal, alignment=1, fontSize=9)))
-    sig_flowable.append(Paragraph("<font size='7'>Director</font>", ParagraphStyle('Right', parent=normal, alignment=1)))
+    sig_flowable.append(Paragraph("<b>Vijay P N</b>", ParagraphStyle('RightBold', parent=normal, alignment=2, fontSize=9)))
+    sig_flowable.append(Paragraph("<font size='7'>Director</font>", ParagraphStyle('Right', parent=normal, alignment=2)))
     
     sig_table = Table([
         [seal_flowable, sig_flowable]
