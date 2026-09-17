@@ -83,7 +83,8 @@ class CheckEmailView(APIView):
                     fail_silently=False,
                 )
             except Exception as e:
-                return Response({'error': 'Failed to send OTP email.'}, status=500)
+                print("Email sending failed:", e)
+                return Response({'error': f'Failed to send OTP email: {str(e)}'}, status=500)
 
             return Response({'exists': True, 'message': 'OTP sent successfully.'})
         except User.DoesNotExist:
