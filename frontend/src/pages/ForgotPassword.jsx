@@ -24,7 +24,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      const res = await api.post('/finance/check-email/', { email });
+      const res = await api.post('check-email/', { email });
       // The backend should now generate and send the OTP here
       setStep(2);
     } catch (err) {
@@ -46,7 +46,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      await api.post('/finance/verify-otp/', { email, otp });
+      await api.post('verify-otp/', { email, otp });
       setStep(3); // Move to password reset
     } catch (err) {
       console.error(err);
@@ -73,7 +73,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      await api.post('/finance/direct-password-reset/', {
+      await api.post('direct-password-reset/', {
         email,
         otp,
         new_password: newPassword
