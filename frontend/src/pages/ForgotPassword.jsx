@@ -29,7 +29,11 @@ const ForgotPassword = () => {
       setStep(2);
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || 'No account found with this email address.');
+      if (err.response?.status >= 500) {
+        setError(err.response?.data?.error || 'Server error occurred. Email sending might have timed out.');
+      } else {
+        setError(err.response?.data?.error || 'No account found with this email address.');
+      }
     } finally {
       setIsLoading(false);
     }
