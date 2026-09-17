@@ -6,6 +6,7 @@ import api from '../api';
 const ForgotPassword = () => {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,11 +24,33 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      await api.post('/finance/check-email/', { email });
+      const res = await api.post('/finance/check-email/', { email });
+      // The backend should now generate and send the OTP here
       setStep(2);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || 'No account found with this email address.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    if (!otp) {
+      setError('Please enter the OTP sent to your email.');
+      return;
+    }
+
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await api.post('/finance/verify-otp/', { email, otp });
+      setStep(3); // Move to password reset
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.error || 'Invalid or expired OTP.');
     } finally {
       setIsLoading(false);
     }
@@ -52,9 +75,10 @@ const ForgotPassword = () => {
     try {
       await api.post('/finance/direct-password-reset/', {
         email,
+        otp,
         new_password: newPassword
       });
-      setStep(3); // Success step
+      setStep(4); // Success step
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || 'Failed to reset password. Please check if the email is correct.');
@@ -80,7 +104,7 @@ const ForgotPassword = () => {
         borderTop: '4px solid var(--primary-color)'
       }}>
         
-        {step !== 3 && (
+        {step !== 4 && (
           <Link to="/login" style={{ 
             display: 'inline-flex', 
             alignItems: 'center', 
@@ -106,17 +130,19 @@ const ForgotPassword = () => {
             margin: '0 auto 1rem auto',
             color: 'var(--primary-color)'
           }}>
-            {step === 3 ? <CheckCircle2 size={32} /> : <ShieldAlert size={32} />}
+            {step === 4 ? <CheckCircle2 size={32} /> : <ShieldAlert size={32} />}
           </div>
           <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 'bold' }}>
             {step === 1 && "Reset Password"}
-            {step === 2 && "New Password"}
-            {step === 3 && "Password Reset!"}
+            {step === 2 && "Verify OTP"}
+            {step === 3 && "New Password"}
+            {step === 4 && "Password Reset!"}
           </h2>
           <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0 0 0' }}>
-            {step === 1 && "Enter your email to reset your password"}
-            {step === 2 && "Enter your new password below"}
-            {step === 3 && "Your password has been changed successfully."}
+            {step === 1 && "Enter your email to receive an OTP"}
+            {step === 2 && "Enter the 6-digit OTP sent to your email"}
+            {step === 3 && "Enter your new password below"}
+            {step === 4 && "Your password has been changed successfully."}
           </p>
         </div>
 
@@ -159,6 +185,31 @@ const ForgotPassword = () => {
         )}
 
         {step === 2 && (
+          <form onSubmit={handleVerifyOTP}>
+            <div className="form-group">
+              <label>One-Time Password (OTP)</label>
+              <input 
+                type="text" 
+                required 
+                value={otp} 
+                onChange={e => setOtp(e.target.value)} 
+                placeholder="Enter 6-digit OTP"
+                maxLength={6}
+                style={{ background: 'rgba(0,0,0,0.2)', textAlign: 'center', letterSpacing: '4px', fontSize: '1.25rem' }}
+              />
+            </div>
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', marginTop: '1rem' }}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Verifying...' : 'Verify OTP'}
+            </button>
+          </form>
+        )}
+
+        {step === 3 && (
           <form onSubmit={handleReset}>
             <div className="form-group">
               <label>New Password</label>
@@ -193,7 +244,7 @@ const ForgotPassword = () => {
           </form>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <button 
             onClick={() => navigate('/login')}
             className="btn btn-primary" 

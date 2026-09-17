@@ -7,6 +7,9 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from decimal import Decimal
 from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
+import random
 from django.db.models import Sum
 from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, OwnerRepayment, RevenueShareScope, Quotation
 from .serializers import (
@@ -28,15 +31,25 @@ class PasswordResetDirectView(APIView):
 
     def post(self, request):
         email = request.data.get('email')
+        otp = request.data.get('otp')
         new_password = request.data.get('new_password')
 
-        if not email or not new_password:
-            return Response({'error': 'Email and new password are required.'}, status=400)
+        if not email or not otp or not new_password:
+            return Response({'error': 'Email, OTP, and new password are required.'}, status=400)
 
         User = get_user_model()
         try:
             user = User.objects.get(email__iexact=email)
+            
+            # Verify OTP again
+            if not user.otp or user.otp != otp:
+                return Response({'error': 'Invalid OTP.'}, status=400)
+            if not user.otp_created_at or timezone.now() > user.otp_created_at + timedelta(minutes=10):
+                return Response({'error': 'OTP has expired.'}, status=400)
+
             user.set_password(new_password)
+            user.otp = None
+            user.otp_created_at = None
             user.save()
             return Response({'success': 'Password reset successfully.'})
         except User.DoesNotExist:
@@ -52,9 +65,54 @@ class CheckEmailView(APIView):
             return Response({'error': 'Email is required.'}, status=400)
             
         User = get_user_model()
-        if User.objects.filter(email__iexact=email).exists():
-            return Response({'exists': True})
-        return Response({'error': 'No account found with this email address.'}, status=404)
+        try:
+            user = User.objects.get(email__iexact=email)
+            # Generate OTP
+            otp = str(random.randint(100000, 999999))
+            user.otp = otp
+            user.otp_created_at = timezone.now()
+            user.save()
+
+            # Send Email
+            try:
+                send_mail(
+                    'Password Reset OTP',
+                    f'Your OTP for password reset is: {otp}. It is valid for 10 minutes.',
+                    None,
+                    [user.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                return Response({'error': 'Failed to send OTP email.'}, status=500)
+
+            return Response({'exists': True, 'message': 'OTP sent successfully.'})
+        except User.DoesNotExist:
+            return Response({'error': 'No account found with this email address.'}, status=404)
+
+class VerifyOTPView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+
+        if not email or not otp:
+            return Response({'error': 'Email and OTP are required.'}, status=400)
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(email__iexact=email)
+            
+            if not user.otp or user.otp != otp:
+                return Response({'error': 'Invalid OTP.'}, status=400)
+                
+            if not user.otp_created_at or timezone.now() > user.otp_created_at + timedelta(minutes=10):
+                return Response({'error': 'OTP has expired. Please request a new one.'}, status=400)
+
+            return Response({'success': 'OTP verified.'})
+        except User.DoesNotExist:
+            return Response({'error': 'No account found.'}, status=404)
 
 class BankAccountViewSet(viewsets.ModelViewSet):
     queryset = BankAccount.objects.all()
@@ -406,11 +464,6 @@ class OwnerDrawViewSet(viewsets.ModelViewSet):
     queryset = OwnerDraw.objects.all().order_by('-date')
     serializer_class = OwnerDrawSerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_authenticated and user.role == 'OWNER':
-            return OwnerDraw.objects.filter(owner=user).order_by('-date')
-        return OwnerDraw.objects.all().order_by('-date')
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):

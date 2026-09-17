@@ -9,6 +9,8 @@ class User(AbstractUser):
         ('ACCOUNTANT', 'Accountant'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='OWNER')
+    otp = models.CharField(max_length=6, blank=True, null=True)
+    otp_created_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         ordering = ['-id']
