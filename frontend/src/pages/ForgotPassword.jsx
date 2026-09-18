@@ -25,8 +25,7 @@ const ForgotPassword = () => {
     
     try {
       const res = await api.post('check-email/', { email });
-      // The backend should now generate and send the OTP here
-      setStep(2);
+      setStep(3); // Skip OTP and go directly to new password
     } catch (err) {
       console.error(err);
       if (err.response?.status >= 500) {
@@ -79,7 +78,6 @@ const ForgotPassword = () => {
     try {
       await api.post('direct-password-reset/', {
         email,
-        otp,
         new_password: newPassword
       });
       setStep(4); // Success step
@@ -143,8 +141,7 @@ const ForgotPassword = () => {
             {step === 4 && "Password Reset!"}
           </h2>
           <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0 0 0' }}>
-            {step === 1 && "Enter your email to receive an OTP"}
-            {step === 2 && "Enter the 6-digit OTP sent to your email"}
+            {step === 1 && "Enter your email to reset your password"}
             {step === 3 && "Enter your new password below"}
             {step === 4 && "Your password has been changed successfully."}
           </p>
@@ -184,31 +181,6 @@ const ForgotPassword = () => {
               disabled={isLoading}
             >
               {isLoading ? 'Checking...' : 'Continue'}
-            </button>
-          </form>
-        )}
-
-        {step === 2 && (
-          <form onSubmit={handleVerifyOTP}>
-            <div className="form-group">
-              <label>One-Time Password (OTP)</label>
-              <input 
-                type="text" 
-                required 
-                value={otp} 
-                onChange={e => setOtp(e.target.value)} 
-                placeholder="Enter 6-digit OTP"
-                maxLength={6}
-                style={{ background: 'rgba(0,0,0,0.2)', textAlign: 'center', letterSpacing: '4px', fontSize: '1.25rem' }}
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', marginTop: '1rem' }}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Verifying...' : 'Verify OTP'}
             </button>
           </form>
         )}

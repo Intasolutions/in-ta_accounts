@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'corsheaders',
+    'anymail',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
@@ -139,6 +140,12 @@ AUTH_USER_MODEL = 'finance.User'
 CORS_ALLOW_ALL_ORIGINS = True # Change in strict production if needed, or define CORS_ALLOWED_ORIGINS
 
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+
+# Mailtrap API Configuration via Anymail
+ANYMAIL = {
+    "MAILTRAP_API_TOKEN": os.environ.get("MAILTRAP_API_TOKEN", ""),
+}
+
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'

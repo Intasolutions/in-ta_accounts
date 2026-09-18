@@ -31,22 +31,15 @@ class PasswordResetDirectView(APIView):
 
     def post(self, request):
         email = request.data.get('email')
-        otp = request.data.get('otp')
         new_password = request.data.get('new_password')
 
-        if not email or not otp or not new_password:
-            return Response({'error': 'Email, OTP, and new password are required.'}, status=400)
+        if not email or not new_password:
+            return Response({'error': 'Email and new password are required.'}, status=400)
 
         User = get_user_model()
         try:
             user = User.objects.get(email__iexact=email)
             
-            # Verify OTP again
-            if not user.otp or user.otp != otp:
-                return Response({'error': 'Invalid OTP.'}, status=400)
-            if not user.otp_created_at or timezone.now() > user.otp_created_at + timedelta(minutes=10):
-                return Response({'error': 'OTP has expired.'}, status=400)
-
             user.set_password(new_password)
             user.otp = None
             user.otp_created_at = None
@@ -67,26 +60,7 @@ class CheckEmailView(APIView):
         User = get_user_model()
         try:
             user = User.objects.get(email__iexact=email)
-            # Generate OTP
-            otp = str(random.randint(100000, 999999))
-            user.otp = otp
-            user.otp_created_at = timezone.now()
-            user.save()
-
-            # Send Email
-            try:
-                send_mail(
-                    'Password Reset OTP',
-                    f'Your OTP for password reset is: {otp}. It is valid for 10 minutes.',
-                    None,
-                    [user.email],
-                    fail_silently=False,
-                )
-            except Exception as e:
-                print("Email sending failed:", e)
-                return Response({'error': f'Failed to send OTP email: {str(e)}'}, status=500)
-
-            return Response({'exists': True, 'message': 'OTP sent successfully.'})
+            return Response({'exists': True, 'message': 'Email found.'})
         except User.DoesNotExist:
             return Response({'error': 'No account found with this email address.'}, status=404)
 
