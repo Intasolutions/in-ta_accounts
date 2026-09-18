@@ -1,5 +1,7 @@
 import os
+import re
 from io import BytesIO
+from decimal import Decimal
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, KeepTogether
@@ -309,7 +311,14 @@ def generate_invoice_pdf(invoice):
     if invoice.pdf_file:
         invoice.pdf_file.delete(save=False)
         
-    file_name = f"Invoice_A{str(invoice.id).zfill(4)}.pdf"
+    client = invoice.project.client
+    client_name = client.company_name or client.name
+    # Clean the client name to be safe for a filename
+    safe_client_name = re.sub(r'[^a-zA-Z0-9]', '', client_name)
+    date_str = invoice.date.strftime('%Y-%m-%d')
+    invoice_number = f"INV-{str(invoice.id).zfill(4)}"
+    
+    file_name = f"{invoice_number}_{safe_client_name}_{date_str}.pdf"
     invoice.pdf_file.save(file_name, ContentFile(pdf), save=True)
     
     return invoice
