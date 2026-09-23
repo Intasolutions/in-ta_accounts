@@ -67,7 +67,7 @@ const PushNotificationSetup = () => {
       });
 
       // Send to backend
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('access_token');
       await axios.post(
         `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/subscribe/`,
         { subscription: subscription.toJSON() },
@@ -121,7 +121,7 @@ const PushNotificationSetup = () => {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const token = localStorage.getItem('token');
+                  const token = sessionStorage.getItem('access_token');
                   await axios.post(
                     `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/test/`,
                     {},
