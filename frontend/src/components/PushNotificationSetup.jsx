@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, BellRing, X } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -187,12 +187,7 @@ const PushNotificationSetup = () => {
         applicationServerKey: convertedVapidKey
       });
 
-      const token = sessionStorage.getItem('access_token');
-      await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/subscribe/`,
-        { subscription: subscription.toJSON() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post('push/subscribe/', { subscription: subscription.toJSON() });
     } catch (err) {
       console.error('Failed to subscribe the user: ', err);
     } finally {
@@ -205,7 +200,31 @@ const PushNotificationSetup = () => {
     localStorage.setItem('pushPromptDismissed', 'true');
   };
 
-  if (!isSupported || dismissed) return null;
+  if (!isSupported) {
+    return (
+      <>
+        <style>{styles}</style>
+        <div className="push-setup-container">
+          <div className="push-bg-blob blob-indigo"></div>
+          <button onClick={handleDismiss} className="push-close-btn">
+            <X size={16} />
+          </button>
+          <div className="push-content">
+            <div className="push-text-content">
+              <h3 className="push-title">Push Notifications Not Supported</h3>
+              <p className="push-desc">
+                Your current browser or device does not support Web Push. 
+                <br/><br/>
+                <b>iPhone/iPad Users:</b> You must update to iOS 16.4+ and use the "Add to Home Screen" feature in Safari, then open the app from your Home Screen to enable notifications.
+              </p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (dismissed) return null;
 
   if (permission === 'granted') {
     return (
@@ -227,12 +246,7 @@ const PushNotificationSetup = () => {
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const token = sessionStorage.getItem('access_token');
-                    await axios.post(
-                      `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/test/`,
-                      {},
-                      { headers: { Authorization: `Bearer ${token}` } }
-                    );
+                    await api.post('push/test/', {});
                     alert("Test Notification Sent Successfully!");
                   } catch (e) {
                     console.error(e);
