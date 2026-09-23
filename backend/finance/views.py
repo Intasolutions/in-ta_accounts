@@ -3,6 +3,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.conf import settings
+from pywebpush import webpush, WebPushException
+import json
+
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from decimal import Decimal
@@ -11,7 +15,7 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 from django.db.models import Sum
-from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, OwnerRepayment, RevenueShareScope, Quotation
+from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, OwnerRepayment, RevenueShareScope, Quotation, PushSubscription
 from .serializers import (
     UserSerializer, ClientSerializer, ProjectSerializer, 
     InvoiceSerializer, AdvanceWalletSerializer, AdvanceRequestSerializer, CompanyExpenseSerializer, MonthLockSerializer,
@@ -20,6 +24,52 @@ from .serializers import (
 )
 from .utils.invoice_generator import generate_invoice_pdf
 
+
+
+def send_push_to_owners(title, body, url="/"):
+    payload = json.dumps({"title": title, "body": body, "url": url})
+    owners = User.objects.filter(role='OWNER')
+    for owner in owners:
+        for sub in owner.push_subscriptions.all():
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": sub.endpoint,
+                        "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
+                    },
+                    data=payload,
+                    vapid_private_key=settings.VAPID_PRIVATE_KEY,
+                    vapid_claims={"sub": f"mailto:{settings.VAPID_ADMIN_EMAIL}"}
+                )
+            except WebPushException as ex:
+                if ex.response and ex.response.status_code in [404, 410]:
+                    sub.delete()
+                print("Web Push Error:", repr(ex))
+            except Exception as e:
+                print("Web Push Unexpected Error:", repr(e))
+
+class PushSubscribeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        subscription = request.data.get('subscription')
+        if not subscription:
+            return Response({"error": "No subscription data provided"}, status=400)
+        
+        endpoint = subscription.get('endpoint')
+        keys = subscription.get('keys', {})
+        p256dh = keys.get('p256dh')
+        auth = keys.get('auth')
+
+        if not endpoint or not p256dh or not auth:
+            return Response({"error": "Invalid subscription data"}, status=400)
+            
+        sub, created = PushSubscription.objects.update_or_create(
+            user=request.user,
+            endpoint=endpoint,
+            defaults={'p256dh': p256dh, 'auth': auth}
+        )
+        return Response({"status": "subscribed", "created": created})
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -252,6 +302,14 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
             return AdvanceRequest.objects.filter(requested_by=user)
         return AdvanceRequest.objects.all()
 
+    def perform_create(self, serializer):
+        adv_request = serializer.save()
+        send_push_to_owners(
+            title="New Advance Request",
+            body=f"{adv_request.requested_by.username} requested {adv_request.amount} for {adv_request.purpose}",
+            url="/advances"
+        )
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         adv_request = self.get_object()
@@ -438,6 +496,15 @@ class RenewalViewSet(viewsets.ModelViewSet):
 class OwnerDrawViewSet(viewsets.ModelViewSet):
     queryset = OwnerDraw.objects.all().order_by('-date')
     serializer_class = OwnerDrawSerializer
+
+    def perform_create(self, serializer):
+        draw = serializer.save()
+        send_push_to_owners(
+            title="New Owner Draw",
+            body=f"{draw.owner.username} requested {draw.amount} for {draw.purpose}",
+            url="/owner-drawings"
+        )
+
 
 
     @action(detail=True, methods=['post'])

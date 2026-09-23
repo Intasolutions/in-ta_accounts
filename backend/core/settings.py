@@ -176,3 +176,8 @@ SIMPLE_JWT = {
 
 # Google Drive Config
 GOOGLE_DRIVE_ROOT_FOLDER_ID = '1JrIKJTVLDsNAvi5WqEzm929UJO-q8I3Y'
+
+# Web Push VAPID Settings
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_ADMIN_EMAIL = os.environ.get('VAPID_ADMIN_EMAIL', '')

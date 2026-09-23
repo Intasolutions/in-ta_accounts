@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, FileText, Wallet, Menu, X, Landmark, Receipt, Archive, Users, LogOut, Gem, Calculator } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import PushNotificationSetup from './PushNotificationSetup';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { user } = useContext(AuthContext);
@@ -109,6 +110,7 @@ const Layout = ({ children }) => {
         </header>
 
         {children}
+        {user?.role === 'OWNER' && <PushNotificationSetup />}
       </main>
     </div>
   );
