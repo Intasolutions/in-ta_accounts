@@ -233,8 +233,14 @@ const PushNotificationSetup = () => {
                       {},
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
+                    alert("Test Notification Sent Successfully!");
                   } catch (e) {
                     console.error(e);
+                    if (e.response && e.response.data && e.response.data.details) {
+                      alert("Backend Push Error: " + JSON.stringify(e.response.data.details, null, 2));
+                    } else {
+                      alert("Error sending push: " + e.message);
+                    }
                   } finally {
                     setLoading(false);
                   }

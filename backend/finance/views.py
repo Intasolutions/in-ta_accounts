@@ -50,6 +50,8 @@ def send_push_to_owners(title, body, url="/"):
 
 def send_push_to_user(user, title, body, url="/"):
     payload = json.dumps({"title": title, "body": body, "url": url})
+    errors = []
+    success_count = 0
     for sub in user.push_subscriptions.all():
         try:
             webpush(
@@ -61,12 +63,18 @@ def send_push_to_user(user, title, body, url="/"):
                 vapid_private_key=settings.VAPID_PRIVATE_KEY,
                 vapid_claims={"sub": f"mailto:{settings.VAPID_ADMIN_EMAIL}"}
             )
+            success_count += 1
         except WebPushException as ex:
             if ex.response and ex.response.status_code in [404, 410]:
                 sub.delete()
-            print("Web Push Error:", repr(ex))
+            err_msg = f"Web Push Error: {repr(ex.response.text if hasattr(ex, 'response') and ex.response else ex)}"
+            print(err_msg)
+            errors.append(err_msg)
         except Exception as e:
-            print("Web Push Unexpected Error:", repr(e))
+            err_msg = f"Web Push Unexpected Error: {repr(e)}"
+            print(err_msg)
+            errors.append(err_msg)
+    return {"success": success_count, "errors": errors}
 
 class PushSubscribeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -95,13 +103,15 @@ class PushTestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        send_push_to_user(
+        result = send_push_to_user(
             user=request.user,
             title="Test Notification",
             body="If you see this, push notifications are working perfectly!",
             url="/"
         )
-        return Response({"status": "test_sent"})
+        if result["errors"] or result["success"] == 0:
+            return Response({"status": "test_failed", "details": result}, status=400)
+        return Response({"status": "test_sent", "details": result})
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
