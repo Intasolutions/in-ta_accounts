@@ -87,8 +87,61 @@ const PushNotificationSetup = () => {
     localStorage.setItem('pushPromptDismissed', 'true');
   };
 
-  if (!isSupported || permission === 'granted' || permission === 'denied' || dismissed) {
+  if (!isSupported || dismissed) {
     return null;
+  }
+
+  // If permission is already granted, show a test button
+  if (permission === 'granted') {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-white/80 backdrop-blur-xl border border-emerald-100 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] p-5 overflow-hidden transition-all duration-500 transform hover:-translate-y-1">
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob"></div>
+        
+        <button 
+          onClick={handleDismiss}
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="flex items-start gap-4 relative z-10">
+          <div className="flex-shrink-0">
+            <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-inner shadow-emerald-300">
+              <Bell className="text-white" size={24} />
+            </div>
+          </div>
+          
+          <div className="flex-1 pt-1">
+            <h3 className="text-gray-900 font-semibold text-sm mb-1 tracking-tight">Push Notifications Active</h3>
+            <p className="text-gray-500 text-xs mb-3 leading-relaxed">
+              You're all set to receive notifications.
+            </p>
+            
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const token = localStorage.getItem('token');
+                  await axios.post(
+                    `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/test/`,
+                    {},
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+                } catch (e) {
+                  console.error(e);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition-all duration-300 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? 'Sending...' : 'Send Test Notification'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

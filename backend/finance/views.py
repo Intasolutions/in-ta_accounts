@@ -48,6 +48,26 @@ def send_push_to_owners(title, body, url="/"):
             except Exception as e:
                 print("Web Push Unexpected Error:", repr(e))
 
+def send_push_to_user(user, title, body, url="/"):
+    payload = json.dumps({"title": title, "body": body, "url": url})
+    for sub in user.push_subscriptions.all():
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
+                },
+                data=payload,
+                vapid_private_key=settings.VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": f"mailto:{settings.VAPID_ADMIN_EMAIL}"}
+            )
+        except WebPushException as ex:
+            if ex.response and ex.response.status_code in [404, 410]:
+                sub.delete()
+            print("Web Push Error:", repr(ex))
+        except Exception as e:
+            print("Web Push Unexpected Error:", repr(e))
+
 class PushSubscribeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -70,6 +90,18 @@ class PushSubscribeView(APIView):
             defaults={'p256dh': p256dh, 'auth': auth}
         )
         return Response({"status": "subscribed", "created": created})
+
+class PushTestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        send_push_to_user(
+            user=request.user,
+            title="Test Notification",
+            body="If you see this, push notifications are working perfectly!",
+            url="/"
+        )
+        return Response({"status": "test_sent"})
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -344,6 +376,13 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
         adv_request.approved_by = request.user if request.user.is_authenticated else None
         adv_request.save()
         
+        send_push_to_user(
+            user=adv_request.requested_by,
+            title="Advance Request Approved",
+            body=f"Your advance request for {adv_request.amount} has been approved.",
+            url="/advances"
+        )
+        
         return Response({'status': 'approved'})
         
     @action(detail=True, methods=['post'])
@@ -535,6 +574,13 @@ class OwnerDrawViewSet(viewsets.ModelViewSet):
         draw.source_bank = source_bank
         draw.approved_by = request.user if request.user.is_authenticated else None
         draw.save()
+        
+        send_push_to_user(
+            user=draw.owner,
+            title="Owner Draw Approved",
+            body=f"Your draw request for {draw.amount} has been approved.",
+            url="/owner-drawings"
+        )
         
         return Response({'status': 'approved'})
         

@@ -110,7 +110,7 @@ const Layout = ({ children }) => {
         </header>
 
         {children}
-        {user?.role === 'OWNER' && <PushNotificationSetup />}
+        {user && <PushNotificationSetup />}
       </main>
     </div>
   );
