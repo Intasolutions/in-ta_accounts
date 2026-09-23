@@ -2,21 +2,146 @@ import React, { useState, useEffect } from 'react';
 import { Bell, BellRing, X } from 'lucide-react';
 import axios from 'axios';
 
-// Utility to convert VAPID public key
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
-
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
+  for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
   return outputArray;
 };
+
+const styles = `
+.push-setup-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  max-width: 380px;
+  width: calc(100% - 48px);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  overflow: hidden;
+  transition: all 0.5s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(100px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.push-setup-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.push-bg-blob {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  mix-blend-mode: multiply;
+  filter: blur(24px);
+  opacity: 0.15;
+}
+.blob-indigo { background-color: #6366f1; }
+.blob-emerald { background-color: #10b981; }
+
+.push-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 4px;
+}
+.push-close-btn:hover { color: #475569; }
+
+.push-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+}
+
+.push-icon-container {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.3);
+}
+.icon-indigo { background: linear-gradient(135deg, #6366f1, #a855f7); }
+.icon-emerald { background: linear-gradient(135deg, #10b981, #14b8a6); }
+
+.push-text-content {
+  flex: 1;
+  padding-top: 4px;
+}
+
+.push-title {
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.push-desc {
+  color: #64748b;
+  font-size: 13px;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.push-action-btn {
+  width: 100%;
+  color: white;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-indigo { background-color: #0f172a; }
+.btn-indigo:hover { background-color: #4f46e5; }
+.btn-emerald { background-color: #059669; }
+.btn-emerald:hover { background-color: #047857; }
+.push-action-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.push-spinner {
+  animation: spin 1s linear infinite;
+  height: 16px;
+  width: 16px;
+  color: white;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+`;
 
 const PushNotificationSetup = () => {
   const [isSupported, setIsSupported] = useState(false);
@@ -28,7 +153,6 @@ const PushNotificationSetup = () => {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       setIsSupported(true);
       setPermission(Notification.permission);
-      
       const isDismissed = localStorage.getItem('pushPromptDismissed');
       if (isDismissed === 'true') {
         setDismissed(true);
@@ -41,7 +165,6 @@ const PushNotificationSetup = () => {
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-
       if (result === 'granted') {
         subscribeUser();
       } else {
@@ -56,8 +179,6 @@ const PushNotificationSetup = () => {
   const subscribeUser = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
-      
-      // Get the VAPID Public Key from environment variables (vite)
       const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BEDPnifWUmOclkCOi7KMfgLwErEOMUCpcdgmyYeVREZHZxikehoVTfcgJmTPn7NKn3h2p8l6PckQuRkaAYA4dtw';
       const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
@@ -66,15 +187,12 @@ const PushNotificationSetup = () => {
         applicationServerKey: convertedVapidKey
       });
 
-      // Send to backend
       const token = sessionStorage.getItem('access_token');
       await axios.post(
         `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/subscribe/`,
         { subscription: subscription.toJSON() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      console.log('Successfully subscribed to push notifications');
     } catch (err) {
       console.error('Failed to subscribe the user: ', err);
     } finally {
@@ -87,112 +205,84 @@ const PushNotificationSetup = () => {
     localStorage.setItem('pushPromptDismissed', 'true');
   };
 
-  if (!isSupported || dismissed) {
-    return null;
-  }
+  if (!isSupported || dismissed) return null;
 
-  // If permission is already granted, show a test button
   if (permission === 'granted') {
     return (
-      <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-white/80 backdrop-blur-xl border border-emerald-100 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] p-5 overflow-hidden transition-all duration-500 transform hover:-translate-y-1">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob"></div>
-        
-        <button 
-          onClick={handleDismiss}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X size={16} />
-        </button>
-
-        <div className="flex items-start gap-4 relative z-10">
-          <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-inner shadow-emerald-300">
-              <Bell className="text-white" size={24} />
+      <>
+        <style>{styles}</style>
+        <div className="push-setup-container">
+          <div className="push-bg-blob blob-emerald"></div>
+          <button onClick={handleDismiss} className="push-close-btn">
+            <X size={16} />
+          </button>
+          <div className="push-content">
+            <div className="push-icon-container icon-emerald">
+              <Bell className="text-white" size={24} color="white" />
+            </div>
+            <div className="push-text-content">
+              <h3 className="push-title">Push Notifications Active</h3>
+              <p className="push-desc">You're all set to receive notifications.</p>
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const token = sessionStorage.getItem('access_token');
+                    await axios.post(
+                      `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/test/`,
+                      {},
+                      { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="push-action-btn btn-emerald"
+              >
+                {loading ? 'Sending...' : 'Send Test Notification'}
+              </button>
             </div>
           </div>
-          
-          <div className="flex-1 pt-1">
-            <h3 className="text-gray-900 font-semibold text-sm mb-1 tracking-tight">Push Notifications Active</h3>
-            <p className="text-gray-500 text-xs mb-3 leading-relaxed">
-              You're all set to receive notifications.
-            </p>
-            
-            <button
-              onClick={async () => {
-                setLoading(true);
-                try {
-                  const token = sessionStorage.getItem('access_token');
-                  await axios.post(
-                    `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/push/test/`,
-                    {},
-                    { headers: { Authorization: `Bearer ${token}` } }
-                  );
-                } catch (e) {
-                  console.error(e);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition-all duration-300 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? 'Sending...' : 'Send Test Notification'}
-            </button>
-          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-white/80 backdrop-blur-xl border border-indigo-100 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] p-5 overflow-hidden transition-all duration-500 transform hover:-translate-y-1">
-      {/* Decorative background blur */}
-      <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob"></div>
-      
-      <button 
-        onClick={handleDismiss}
-        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
-      >
-        <X size={16} />
-      </button>
-
-      <div className="flex items-start gap-4 relative z-10">
-        <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-inner shadow-indigo-300">
-            {loading ? (
-              <BellRing className="text-white animate-pulse" size={24} />
-            ) : (
-              <Bell className="text-white animate-bounce" size={24} />
-            )}
+    <>
+      <style>{styles}</style>
+      <div className="push-setup-container">
+        <div className="push-bg-blob blob-indigo"></div>
+        <button onClick={handleDismiss} className="push-close-btn">
+          <X size={16} />
+        </button>
+        <div className="push-content">
+          <div className="push-icon-container icon-indigo">
+            {loading ? <BellRing size={24} color="white" /> : <Bell size={24} color="white" />}
+          </div>
+          <div className="push-text-content">
+            <h3 className="push-title">Stay Updated Instantly</h3>
+            <p className="push-desc">Get premium native notifications on your device whenever an amount is requested.</p>
+            <button onClick={requestPermission} disabled={loading} className="push-action-btn btn-indigo">
+              {loading ? (
+                <>
+                  <svg className="push-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Enabling...
+                </>
+              ) : (
+                'Enable Push Notifications'
+              )}
+            </button>
           </div>
         </div>
-        
-        <div className="flex-1 pt-1">
-          <h3 className="text-gray-900 font-semibold text-sm mb-1 tracking-tight">Stay Updated Instantly</h3>
-          <p className="text-gray-500 text-xs mb-3 leading-relaxed">
-            Get premium native notifications on your device whenever an amount is requested.
-          </p>
-          
-          <button
-            onClick={requestPermission}
-            disabled={loading}
-            className="w-full bg-gray-900 hover:bg-indigo-600 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition-all duration-300 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Enabling...
-              </>
-            ) : (
-              'Enable Push Notifications'
-            )}
-          </button>
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 
