@@ -113,6 +113,39 @@ class PushTestView(APIView):
             return Response({"status": "test_failed", "details": result}, status=400)
         return Response({"status": "test_sent", "details": result})
 
+class TriggerDailySummaryView(APIView):
+    permission_classes = [] 
+    authentication_classes = []
+
+    def get(self, request):
+        token = request.query_params.get('token')
+        if token != "cron_super_secret_123":
+            return Response({"error": "Unauthorized"}, status=403)
+
+        now = timezone.now()
+        current_month = now.month
+        current_year = now.year
+
+        bank_total = BankAccount.objects.aggregate(total=Sum('current_balance'))['total'] or 0
+        income_total = Invoice.objects.filter(
+            status='PAID', date__month=current_month, date__year=current_year
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        expense_total = CompanyExpense.objects.filter(
+            date__month=current_month, date__year=current_year
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        net_profit = income_total - expense_total
+        body = f"Bank Balance: ₹{bank_total:,.0f}\nThis Month's Profit: ₹{net_profit:,.0f}\nThis Month's Expenses: ₹{expense_total:,.0f}"
+
+        owners = User.objects.filter(role='OWNER')
+        notified = 0
+        for owner in owners:
+            if owner.push_subscriptions.exists():
+                send_push_to_user(user=owner, title="Good Morning! Daily Summary ☀️", body=body, url="/")
+                notified += 1
+                
+        return Response({"status": "sent", "notified": notified})
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
