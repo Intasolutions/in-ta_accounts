@@ -137,11 +137,11 @@ class TriggerDailySummaryView(APIView):
         net_profit = income_total - expense_total
         body = f"Bank Balance: ₹{bank_total:,.0f}\nThis Month's Profit: ₹{net_profit:,.0f}\nThis Month's Expenses: ₹{expense_total:,.0f}"
 
-        owners = User.objects.filter(role='OWNER')
+        users = User.objects.all()
         notified = 0
-        for owner in owners:
-            if owner.push_subscriptions.exists():
-                send_push_to_user(user=owner, title="Good Morning! Daily Summary ☀️", body=body, url="/")
+        for u in users:
+            if u.push_subscriptions.exists():
+                send_push_to_user(user=u, title="Good Morning! Daily Summary ☀️", body=body, url="/")
                 notified += 1
                 
         return Response({"status": "sent", "notified": notified})

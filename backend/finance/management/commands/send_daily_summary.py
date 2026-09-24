@@ -43,16 +43,16 @@ class Command(BaseCommand):
             f"This Month's Expenses: {format_inr(expense_total)}"
         )
 
-        owners = User.objects.filter(role='OWNER')
+        users = User.objects.all()
         notified_count = 0
-        for owner in owners:
-            if owner.push_subscriptions.exists():
+        for u in users:
+            if u.push_subscriptions.exists():
                 send_push_to_user(
-                    user=owner,
+                    user=u,
                     title=title,
                     body=body,
                     url="/"
                 )
                 notified_count += 1
         
-        self.stdout.write(self.style.SUCCESS(f'Successfully sent daily summary to {notified_count} owners.'))
+        self.stdout.write(self.style.SUCCESS(f'Successfully sent daily summary to {notified_count} users.'))
