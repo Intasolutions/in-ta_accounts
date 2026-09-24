@@ -152,10 +152,16 @@ const PushNotificationSetup = () => {
   useEffect(() => {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       setIsSupported(true);
-      setPermission(Notification.permission);
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
       const isDismissed = localStorage.getItem('pushPromptDismissed');
       if (isDismissed === 'true') {
         setDismissed(true);
+      }
+      
+      // If permission is already granted but they don't have a sub in the backend, sync it silently
+      if (currentPermission === 'granted') {
+        subscribeUser(true);
       }
     }
   }, []);
@@ -166,7 +172,7 @@ const PushNotificationSetup = () => {
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result === 'granted') {
-        subscribeUser();
+        await subscribeUser(false);
       } else {
         setLoading(false);
       }
@@ -176,20 +182,41 @@ const PushNotificationSetup = () => {
     }
   };
 
-  const subscribeUser = async () => {
+  const subscribeUser = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const registration = await navigator.serviceWorker.ready;
       const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BEDPnifWUmOclkCOi7KMfgLwErEOMUCpcdgmyYeVREZHZxikehoVTfcgJmTPn7NKn3h2p8l6PckQuRkaAYA4dtw';
       const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: convertedVapidKey
-      });
+      let subscription;
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey
+        });
+      } catch (err) {
+        // If a subscription with a different key exists, unsubscribe and try again
+        console.warn("Subscribe failed, trying to clear old subscription...", err);
+        const oldSubscription = await registration.pushManager.getSubscription();
+        if (oldSubscription) {
+          await oldSubscription.unsubscribe();
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          });
+        } else {
+          throw err;
+        }
+      }
 
       await api.post('push/subscribe/', { subscription: subscription.toJSON() });
+      console.log('Successfully subscribed to push notifications');
     } catch (err) {
       console.error('Failed to subscribe the user: ', err);
+      if (!silent) {
+        alert("Failed to subscribe browser to push service: " + err.message);
+      }
     } finally {
       setLoading(false);
     }
