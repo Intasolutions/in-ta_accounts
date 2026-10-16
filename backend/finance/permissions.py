@@ -26,7 +26,9 @@ class CustomRolePermission(permissions.BasePermission):
             allowed_write_views = ['CompanyExpenseViewSet', 'AdvanceRequestViewSet', 'OwnerDrawViewSet', 'QuotationViewSet']
 
             if view_name in allowed_write_views:
-                # Restrict custom action calls that modify status or transfer money
+                # Restrict deletion of draws and custom action calls that modify status or transfer money
+                if request.method == 'DELETE' and view_name in ['OwnerDrawViewSet', 'OwnerRepaymentViewSet']:
+                    return False
                 if hasattr(view, 'action') and view.action in ['approve', 'reject', 'settle', 'transfer']:
                     return False
                 return True

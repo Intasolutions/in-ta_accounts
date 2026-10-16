@@ -3,7 +3,7 @@ import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
-import { Gem, Plus, CheckCircle, XCircle, X } from 'lucide-react';
+import { Gem, Plus, CheckCircle, XCircle, X, Trash2 } from 'lucide-react';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
@@ -143,6 +143,31 @@ const OwnerDrawings = () => {
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0);
+  };
+
+  const isSuperAdmin = Boolean(user && (user.is_superuser || user.role === 'ACCOUNTANT'));
+
+  const handleDeleteItem = async (item) => {
+    const isDrawing = item.type === 'DRAWING';
+    const label = isDrawing ? 'Drawing' : 'Commission Offset';
+    const extraWarning = isDrawing && item.status === 'APPROVED'
+      ? `\n\nNote: This drawing was APPROVED. Deleting it will restore ${formatCurrency(item.amount)} back to the company bank account (${item.source_bank_name || 'Bank'}) and remove the ledger transaction.`
+      : '';
+
+    if (await confirm(`Are you sure you want to delete this ${label} of ${formatCurrency(item.amount)} for ${item.owner_name}?${extraWarning}`)) {
+      try {
+        if (isDrawing) {
+          await api.delete(`owner-draws/${item.id}/`);
+        } else {
+          await api.delete(`owner-repayments/${item.id}/`);
+        }
+        toast.success(`${label} deleted successfully`);
+        fetchData();
+      } catch (err) {
+        console.error(err);
+        toast.error(`Failed to delete ${label.toLowerCase()}`);
+      }
+    }
   };
 
   const allLedgerItems = [
@@ -402,25 +427,37 @@ const OwnerDrawings = () => {
                     )}
                     <span>{item.type === 'DRAWING' ? (item.source_bank_name || '-') : 'Ledger Offset'}</span>
                   </div>
-                  {item.type === 'DRAWING' && item.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
-                    approvingId === item.id ? (
-                      <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-                        <CustomSelect 
-                          value={approvalBank} 
-                          onChange={setApprovalBank} 
-                          placeholder="Bank..."
-                          options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
-                        />
-                        <button onClick={() => handleApprove(item.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={15}/></button>
-                        <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={15}/></button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '0.3rem' }}>
-                        <button onClick={() => setApprovingId(item.id)} className="btn btn-success" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
-                        <button onClick={() => handleReject(item.id)} className="btn btn-danger" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
-                      </div>
-                    )
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    {item.type === 'DRAWING' && item.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
+                      approvingId === item.id ? (
+                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                          <CustomSelect 
+                            value={approvalBank} 
+                            onChange={setApprovalBank} 
+                            placeholder="Bank..."
+                            options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
+                          />
+                          <button onClick={() => handleApprove(item.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={15}/></button>
+                          <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={15}/></button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '0.3rem' }}>
+                          <button onClick={() => setApprovingId(item.id)} className="btn btn-success" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
+                          <button onClick={() => handleReject(item.id)} className="btn btn-danger" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
+                        </div>
+                      )
+                    )}
+                    {isSuperAdmin && (
+                      <button 
+                        onClick={() => handleDeleteItem(item)} 
+                        className="btn" 
+                        style={{ padding: '0.25rem 0.4rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
+                        title="Delete (Super Admin)"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -465,25 +502,37 @@ const OwnerDrawings = () => {
                     </td>
                     <td data-label="Funded From">{item.type === 'DRAWING' ? (item.source_bank_name || '-') : 'Ledger Offset'}</td>
                     <td data-label="Actions">
-                      {item.type === 'DRAWING' && item.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
-                        approvingId === item.id ? (
-                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-                            <CustomSelect 
-                              value={approvalBank} 
-                              onChange={setApprovalBank} 
-                              placeholder="Select Bank..."
-                              options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
-                            />
-                            <button onClick={() => handleApprove(item.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={16}/></button>
-                            <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={16}/></button>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setApprovingId(item.id)} className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
-                            <button onClick={() => handleReject(item.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
-                          </div>
-                        )
-                      )}
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        {item.type === 'DRAWING' && item.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
+                          approvingId === item.id ? (
+                            <>
+                              <CustomSelect 
+                                value={approvalBank} 
+                                onChange={setApprovalBank} 
+                                placeholder="Select Bank..."
+                                options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
+                              />
+                              <button onClick={() => handleApprove(item.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={16}/></button>
+                              <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={16}/></button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => setApprovingId(item.id)} className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
+                              <button onClick={() => handleReject(item.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
+                            </>
+                          )
+                        )}
+                        {isSuperAdmin && (
+                          <button 
+                            onClick={() => handleDeleteItem(item)} 
+                            className="btn" 
+                            style={{ padding: '0.35rem 0.55rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }} 
+                            title="Delete (Super Admin)"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

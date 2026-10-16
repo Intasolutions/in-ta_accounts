@@ -1,3 +1,5 @@
+from decimal import Decimal
+from django.db import models
 from rest_framework import serializers
 from .models import User, Client, Project, Invoice, AdvanceWallet, AdvanceRequest, CompanyExpense, MonthLock, Enhancement, Renewal, BankAccount, Transaction, OwnerDraw, OwnerRepayment, RevenueShareScope, Quotation, PushSubscription
 
@@ -6,7 +8,11 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'password']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_superuser', 'is_staff', 'password']
+        extra_kwargs = {
+            'is_superuser': {'read_only': True},
+            'is_staff': {'read_only': True}
+        }
         
     def create(self, validated_data):
         password = validated_data.pop('password', None)
@@ -82,9 +88,9 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def get_total_project_value(self, obj):
         if not obj.project:
-            return 0
-        enhancement_total = sum(e.cost for e in obj.project.enhancements.all())
-        return obj.project.total_value + enhancement_total
+            return Decimal('0.00')
+        enhancement_total = sum(Decimal(str(e.cost or 0)) for e in obj.project.enhancements.all())
+        return Decimal(str(obj.project.total_value or 0)) + enhancement_total
 
     def get_calculated_advance_amount(self, obj):
         if obj.advance_amount is not None:
@@ -93,8 +99,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
             return None
         if obj.payment_type == 'ADVANCE':
             return obj.amount
-        adv_inv = obj.project.invoices.filter(payment_type='ADVANCE').exclude(id=obj.id if obj.id else None).order_by('date', 'id').first()
-        return adv_inv.amount if adv_inv else None
+        all_invs = [i for i in obj.project.invoices.all() if i.payment_type == 'ADVANCE' and i.id != obj.id]
+        if all_invs:
+            all_invs.sort(key=lambda x: (x.date, x.id or 0))
+            return all_invs[0].amount
+        return None
 
     def get_calculated_advance_date(self, obj):
         if obj.advance_date is not None:
@@ -103,8 +112,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
             return None
         if obj.payment_type == 'ADVANCE':
             return obj.date
-        adv_inv = obj.project.invoices.filter(payment_type='ADVANCE').exclude(id=obj.id if obj.id else None).order_by('date', 'id').first()
-        return adv_inv.date if adv_inv else None
+        all_invs = [i for i in obj.project.invoices.all() if i.payment_type == 'ADVANCE' and i.id != obj.id]
+        if all_invs:
+            all_invs.sort(key=lambda x: (x.date, x.id or 0))
+            return all_invs[0].date
+        return None
 
     def get_calculated_balance_amount(self, obj):
         if obj.balance_amount is not None:
@@ -116,20 +128,18 @@ class InvoiceSerializer(serializers.ModelSerializer):
             return Decimal('0.00')
         
         if obj.payment_type == 'ADVANCE':
-            return max(Decimal('0.00'), total_val - obj.amount)
+            return max(Decimal('0.00'), total_val - Decimal(str(obj.amount or 0)))
         elif obj.payment_type == 'FULL':
             return Decimal('0.00')
         
         # PARTIAL
         adv = self.get_calculated_advance_amount(obj) or Decimal('0.00')
-        prior_qs = obj.project.invoices.filter(
-            payment_type='PARTIAL',
-            date__lte=obj.date
-        ).exclude(id=obj.id if obj.id else None)
-        if obj.id:
-            prior_qs = prior_qs.filter(models.Q(date__lt=obj.date) | models.Q(date=obj.date, id__lt=obj.id))
-        prior_partials = sum(i.amount for i in prior_qs)
-        total_paid_so_far = adv + prior_partials + obj.amount
+        prior_partials = Decimal('0.00')
+        for i in obj.project.invoices.all():
+            if i.payment_type == 'PARTIAL' and i.id != obj.id:
+                if i.date < obj.date or (i.date == obj.date and (i.id or 0) < (obj.id or 0)):
+                    prior_partials += Decimal(str(i.amount or 0))
+        total_paid_so_far = Decimal(str(adv)) + prior_partials + Decimal(str(obj.amount or 0))
         return max(Decimal('0.00'), total_val - total_paid_so_far)
 
 class RevenueShareScopeSerializer(serializers.ModelSerializer):
@@ -154,13 +164,13 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_total_project_value(self, obj):
-        enhancement_total = sum(e.cost for e in obj.enhancements.all())
+        enhancement_total = sum(Decimal(str(e.cost or 0)) for e in obj.enhancements.all())
         if obj.project_type == 'REVENUE_SHARE':
-            return sum(i.amount for i in obj.invoices.all())
-        return obj.total_value + enhancement_total
+            return sum(Decimal(str(i.amount or 0)) for i in obj.invoices.all())
+        return Decimal(str(obj.total_value or 0)) + enhancement_total
 
     def get_amount_received(self, obj):
-        return sum(i.amount for i in obj.invoices.filter(status='PAID'))
+        return sum(Decimal(str(i.amount or 0)) for i in obj.invoices.all() if i.status == 'PAID')
 
     def get_balance_due(self, obj):
         return self.get_total_project_value(obj) - self.get_amount_received(obj)

@@ -266,7 +266,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     serializer_class = ClientSerializer
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all()
+    queryset = Project.objects.select_related('client').prefetch_related('enhancements', 'renewals', 'expenses', 'invoices', 'revenue_share_scopes').all()
     serializer_class = ProjectSerializer
 
 class RevenueShareScopeViewSet(viewsets.ModelViewSet):
@@ -274,7 +274,7 @@ class RevenueShareScopeViewSet(viewsets.ModelViewSet):
     serializer_class = RevenueShareScopeSerializer
 
 class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.all()
+    queryset = Invoice.objects.select_related('project', 'project__client', 'deposit_account').prefetch_related('project__enhancements', 'project__invoices').all()
     serializer_class = InvoiceSerializer
 
     def perform_create(self, serializer):
@@ -641,6 +641,21 @@ class OwnerDrawViewSet(viewsets.ModelViewSet):
         draw.save()
         return Response({'status': 'rejected'})
 
+    def destroy(self, request, *args, **kwargs):
+        if not (request.user.is_superuser or request.user.role == 'ACCOUNTANT'):
+            return Response({'error': 'Only super admin can delete drawings'}, status=403)
+        draw = self.get_object()
+        if draw.status == 'APPROVED' and draw.source_bank:
+            draw.source_bank.current_balance += draw.amount
+            draw.source_bank.save()
+            Transaction.objects.filter(
+                bank_account=draw.source_bank,
+                amount=-draw.amount,
+                transaction_type='OWNER_DRAW',
+                description__icontains=draw.owner.username
+            ).delete()
+        return super().destroy(request, *args, **kwargs)
+
 class QuotationViewSet(viewsets.ModelViewSet):
     queryset = Quotation.objects.all()
     serializer_class = QuotationSerializer
@@ -670,3 +685,8 @@ class OwnerRepaymentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(logged_by=self.request.user if self.request.user.is_authenticated else None)
+
+    def destroy(self, request, *args, **kwargs):
+        if not (request.user.is_superuser or request.user.role == 'ACCOUNTANT'):
+            return Response({'error': 'Only super admin can delete repayments'}, status=403)
+        return super().destroy(request, *args, **kwargs)
