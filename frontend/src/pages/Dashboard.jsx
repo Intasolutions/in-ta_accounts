@@ -38,8 +38,15 @@ const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [renewals, setRenewals] = useState([]);
   
-  // Breakdown Modal State
   const [breakdownModal, setBreakdownModal] = useState({ isOpen: false, title: '', type: '' });
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+  const [activeMobileSection, setActiveMobileSection] = useState('overview'); // 'overview' | 'tables'
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -233,33 +240,48 @@ const Dashboard = () => {
         </div>
         
         {/* Date Filter & Actions */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--surface-border)' }}>
-            <Filter size={16} color="var(--primary-color)" />
-            <input 
-              type="date" 
-              value={startDate} 
-              onChange={e => setStartDate(e.target.value)}
-              style={{ border: 'none', background: 'transparent', color: 'var(--text-color)', outline: 'none' }}
-            />
-            <span style={{ color: 'var(--text-muted)' }}>to</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.4rem', 
+            background: 'var(--surface-color)', 
+            padding: '0.4rem 0.75rem', 
+            borderRadius: '0.5rem', 
+            border: '1px solid var(--surface-border)',
+            width: isMobile ? '100%' : 'auto',
+            justifyContent: 'space-between',
+            fontSize: '0.85rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Filter size={15} color="var(--primary-color)" />
+              <input 
+                type="date" 
+                value={startDate} 
+                onChange={e => setStartDate(e.target.value)}
+                style={{ border: 'none', background: 'transparent', color: 'var(--text-color)', outline: 'none', fontSize: '0.8rem', width: '120px' }}
+              />
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>to</span>
             <input 
               type="date" 
               value={endDate} 
               onChange={e => setEndDate(e.target.value)}
-              style={{ border: 'none', background: 'transparent', color: 'var(--text-color)', outline: 'none' }}
+              style={{ border: 'none', background: 'transparent', color: 'var(--text-color)', outline: 'none', fontSize: '0.8rem', width: '120px' }}
             />
           </div>
 
-          <button className="btn btn-secondary" onClick={() => navigate('/expenses')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <DollarSign size={16} /> Request Advance
-          </button>
-          
-          {user.role === 'SUPER_ADMIN' && (
-            <button className="btn btn-primary" onClick={downloadCAExport} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Download size={16} /> CA Export
+          <div style={{ display: 'flex', gap: '0.5rem', width: isMobile ? '100%' : 'auto' }}>
+            <button className="btn btn-secondary" onClick={() => navigate('/expenses')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}>
+              <DollarSign size={15} /> Request Advance
             </button>
-          )}
+            
+            {user.role === 'SUPER_ADMIN' && (
+              <button className="btn btn-primary" onClick={downloadCAExport} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}>
+                <Download size={15} /> CA Export
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -310,56 +332,81 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* CHARTS SECTION */}
-      <div className="dashboard-content-grid">
-        
-        {/* Cash Flow Chart (Always 12 Months) */}
-        <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ margin: '0 0 1.5rem 0' }}>Cash Flow Trend (Last 12 Months)</h3>
-          <div style={{ height: 300, width: '100%' }}>
-            <ResponsiveContainer>
-              <LineChart data={cashFlowData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="name" stroke="var(--text-muted)" />
-                <YAxis stroke="var(--text-muted)" tickFormatter={(value) => `₹${value/1000}k`} />
-                <RechartsTooltip contentStyle={{ backgroundColor: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem' }} />
-                <Legend />
-                <Line type="monotone" dataKey="Income" stroke="var(--success)" strokeWidth={3} activeDot={{ r: 8 }} />
-                <Line type="monotone" dataKey="Expenses" stroke="var(--danger)" strokeWidth={3} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Mobile Tab Switcher */}
+      {isMobile && (
+        <div className="segmented-control" style={{ marginBottom: '1rem', width: '100%' }}>
+          <button 
+            type="button"
+            className={`segmented-btn ${activeMobileSection === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveMobileSection('overview')}
+            style={{ flex: 1, padding: '0.5rem', textAlign: 'center' }}
+          >
+            Charts & Cash Flow
+          </button>
+          <button 
+            type="button"
+            className={`segmented-btn ${activeMobileSection === 'tables' ? 'active' : ''}`}
+            onClick={() => setActiveMobileSection('tables')}
+            style={{ flex: 1, padding: '0.5rem', textAlign: 'center' }}
+          >
+            Projects & AMCs
+          </button>
         </div>
+      )}
 
-        {/* Expense Donut Chart (Filtered by Date) */}
-        <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ margin: '0 0 1.5rem 0' }}>Expense Breakdown (Selected Period)</h3>
-          <div style={{ height: 300, width: '100%' }}>
-            {expenseCategoryData.length > 0 ? (
+      {/* CHARTS SECTION */}
+      {(!isMobile || activeMobileSection === 'overview') && (
+        <div className="dashboard-content-grid">
+          
+          {/* Cash Flow Chart (Always 12 Months) */}
+          <div className="card" style={{ marginBottom: 0 }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: isMobile ? '1rem' : '1.15rem' }}>Cash Flow Trend (Last 12 Months)</h3>
+            <div style={{ height: isMobile ? 220 : 300, width: '100%' }}>
               <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={expenseCategoryData} innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
-                    {expenseCategoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                <LineChart data={cashFlowData} margin={{ top: 5, right: 10, bottom: 5, left: -15 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} />
+                  <YAxis stroke="var(--text-muted)" fontSize={11} tickFormatter={(value) => `₹${value/1000}k`} />
                   <RechartsTooltip contentStyle={{ backgroundColor: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem' }} />
                   <Legend />
-                </PieChart>
+                  <Line type="monotone" dataKey="Income" stroke="var(--success)" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="Expenses" stroke="var(--danger)" strokeWidth={2.5} />
+                </LineChart>
               </ResponsiveContainer>
-            ) : (
-               <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>No expense data for this period</div>
-            )}
+            </div>
+          </div>
+
+          {/* Expense Donut Chart (Filtered by Date) */}
+          <div className="card" style={{ marginBottom: 0 }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: isMobile ? '1rem' : '1.15rem' }}>Expense Breakdown</h3>
+            <div style={{ height: isMobile ? 220 : 300, width: '100%' }}>
+              {expenseCategoryData.length > 0 ? (
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={expenseCategoryData} innerRadius={isMobile ? 50 : 70} outerRadius={isMobile ? 80 : 100} paddingAngle={5} dataKey="value">
+                      {expenseCategoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ backgroundColor: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem' }} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                 <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>No expense data for this period</div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* BOTTOM SECTION: PROJECTS & ALERTS */}
-      <div className="dashboard-content-grid" style={{ marginBottom: 0 }}>
-        
-        {/* Project Wise Report (All-Time) */}
-        <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ margin: '0 0 1.5rem 0' }}>All-Time Project Profitability Report</h3>
+      {(!isMobile || activeMobileSection === 'tables') && (
+        <div className="dashboard-content-grid" style={{ marginBottom: 0 }}>
+          
+          {/* Project Wise Report (All-Time) */}
+          <div className="card" style={{ marginBottom: 0 }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: isMobile ? '1rem' : '1.15rem' }}>Project Profitability Report</h3>
           <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto', overflowX: 'auto' }}>
             <table className="responsive-table">
               <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-color)', zIndex: 1 }}>
@@ -434,6 +481,7 @@ const Dashboard = () => {
         </div>
 
       </div>
+      )}
 
       {/* BREAKDOWN MODAL */}
       {breakdownModal.isOpen && (

@@ -111,6 +111,30 @@ const Layout = ({ children }) => {
 
         {children}
         {user && <PushNotificationSetup />}
+
+        {/* Mobile Quick Bottom Navigation */}
+        <nav className="mobile-bottom-nav">
+          <NavLink to="/" className={({ isActive }) => isActive ? "mobile-bottom-nav-item active" : "mobile-bottom-nav-item"} end>
+            <LayoutDashboard size={20} />
+            <span>Dashboard</span>
+          </NavLink>
+          <NavLink to="/projects" className={({ isActive }) => isActive ? "mobile-bottom-nav-item active" : "mobile-bottom-nav-item"}>
+            <Briefcase size={20} />
+            <span>Projects</span>
+          </NavLink>
+          <NavLink to="/invoices" className={({ isActive }) => isActive ? "mobile-bottom-nav-item active" : "mobile-bottom-nav-item"}>
+            <FileText size={20} />
+            <span>Invoices</span>
+          </NavLink>
+          <NavLink to="/expenses" className={({ isActive }) => isActive ? "mobile-bottom-nav-item active" : "mobile-bottom-nav-item"}>
+            <Receipt size={20} />
+            <span>Expenses</span>
+          </NavLink>
+          <NavLink to="/quotations" className={({ isActive }) => isActive ? "mobile-bottom-nav-item active" : "mobile-bottom-nav-item"}>
+            <Calculator size={20} />
+            <span>Quotes</span>
+          </NavLink>
+        </nav>
       </main>
     </div>
   );

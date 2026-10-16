@@ -42,6 +42,14 @@ const OwnerDrawings = () => {
   const [approvingId, setApprovingId] = useState(null);
   const [approvalBank, setApprovalBank] = useState('');
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
@@ -208,142 +216,283 @@ const OwnerDrawings = () => {
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: '2rem', animation: 'fadeIn 0.3s ease' }}>
-          <form onSubmit={handleRequestDraw} style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            {user.role === 'ACCOUNTANT' && (
+        isMobile ? (
+          <div className="modal-overlay" onClick={() => setShowForm(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Request Funds</h3>
+                <button type="button" className="btn" onClick={() => setShowForm(false)} style={{ padding: '0.25rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleRequestDraw} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {user.role === 'ACCOUNTANT' && (
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Select Owner</label>
+                    <CustomSelect 
+                      required
+                      value={newDraw.owner} 
+                      onChange={val => setNewDraw({...newDraw, owner: val})} 
+                      options={owners.map(o => ({ value: o.id, label: o.username }))}
+                    />
+                  </div>
+                )}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Amount Requested (₹)</label>
+                  <input type="number" step="0.01" required value={newDraw.amount} onChange={e => setNewDraw({...newDraw, amount: e.target.value})} placeholder="0.00" />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Date</label>
+                  <input type="date" required value={newDraw.date} onChange={e => setNewDraw({...newDraw, date: e.target.value})} max={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Purpose / Note</label>
+                  <input type="text" required value={newDraw.purpose} onChange={e => setNewDraw({...newDraw, purpose: e.target.value})} placeholder="e.g. Personal Expenses" />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <button type="button" className="btn" onClick={() => setShowForm(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ background: 'var(--success)' }}>Submit Request</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <div className="card" style={{ marginBottom: '2rem', animation: 'fadeIn 0.3s ease' }}>
+            <form onSubmit={handleRequestDraw} style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              {user.role === 'ACCOUNTANT' && (
+                <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
+                  <label>Select Owner</label>
+                  <CustomSelect 
+                    required
+                    value={newDraw.owner} 
+                    onChange={val => setNewDraw({...newDraw, owner: val})} 
+                    options={owners.map(o => ({ value: o.id, label: o.username }))}
+                  />
+                </div>
+              )}
+              <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
+                <label>Amount Requested (₹)</label>
+                <input type="number" step="0.01" required value={newDraw.amount} onChange={e => setNewDraw({...newDraw, amount: e.target.value})} placeholder="0.00" style={{ fontSize: '1.25rem', padding: '1rem' }} />
+              </div>
+              <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
+                <label>Date</label>
+                <input type="date" required value={newDraw.date} onChange={e => setNewDraw({...newDraw, date: e.target.value})} max={new Date().toISOString().split('T')[0]} style={{ fontSize: '1.25rem', padding: '1rem' }} />
+              </div>
+              <div className="form-group" style={{ flex: '2 1 300px', marginBottom: 0 }}>
+                <label>Purpose / Note</label>
+                <input type="text" required value={newDraw.purpose} onChange={e => setNewDraw({...newDraw, purpose: e.target.value})} placeholder="e.g. Personal Expenses" style={{ fontSize: '1.25rem', padding: '1rem' }} />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem', background: 'var(--success)' }}>Submit Request</button>
+            </form>
+          </div>
+        )
+      )}
+
+      {showRepaymentForm && (
+        isMobile ? (
+          <div className="modal-overlay" onClick={() => setShowRepaymentForm(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--success)' }}>Log Commission Offset</h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.75rem' }}>Reduces owner credit without bank outflow</p>
+                </div>
+                <button type="button" className="btn" onClick={() => setShowRepaymentForm(false)} style={{ padding: '0.25rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleLogRepayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Select Owner</label>
+                  <CustomSelect 
+                    required
+                    value={newRepayment.owner} 
+                    onChange={val => setNewRepayment({...newRepayment, owner: val})} 
+                    options={owners.map(o => ({ value: o.id, label: o.username }))}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Amount (₹)</label>
+                  <input type="number" step="0.01" required value={newRepayment.amount} onChange={e => setNewRepayment({...newRepayment, amount: e.target.value})} placeholder="0.00" />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Date</label>
+                  <input type="date" required value={newRepayment.date} onChange={e => setNewRepayment({...newRepayment, date: e.target.value})} max={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Purpose / Note</label>
+                  <input type="text" required value={newRepayment.purpose} onChange={e => setNewRepayment({...newRepayment, purpose: e.target.value})} placeholder="e.g. September Commission" />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <button type="button" className="btn" onClick={() => setShowRepaymentForm(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-success" style={{ background: 'var(--success)' }}>Log Offset</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <div className="card" style={{ marginBottom: '2rem', animation: 'fadeIn 0.3s ease', border: '1px solid var(--success)' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, color: 'var(--success)' }}>Log Commission Offset</h3>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>This reduces the owner's credit balance without affecting the company bank account.</p>
+            </div>
+            <form onSubmit={handleLogRepayment} style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
               <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
                 <label>Select Owner</label>
                 <CustomSelect 
                   required
-                  value={newDraw.owner} 
-                  onChange={val => setNewDraw({...newDraw, owner: val})} 
+                  value={newRepayment.owner} 
+                  onChange={val => setNewRepayment({...newRepayment, owner: val})} 
                   options={owners.map(o => ({ value: o.id, label: o.username }))}
                 />
               </div>
-            )}
-            <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
-              <label>Amount Requested (₹)</label>
-              <input type="number" step="0.01" required value={newDraw.amount} onChange={e => setNewDraw({...newDraw, amount: e.target.value})} placeholder="0.00" style={{ fontSize: '1.25rem', padding: '1rem' }} />
-            </div>
-            <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
-              <label>Date</label>
-              <input type="date" required value={newDraw.date} onChange={e => setNewDraw({...newDraw, date: e.target.value})} max={new Date().toISOString().split('T')[0]} style={{ fontSize: '1.25rem', padding: '1rem' }} />
-            </div>
-            <div className="form-group" style={{ flex: '2 1 300px', marginBottom: 0 }}>
-              <label>Purpose / Note</label>
-              <input type="text" required value={newDraw.purpose} onChange={e => setNewDraw({...newDraw, purpose: e.target.value})} placeholder="e.g. Personal Expenses" style={{ fontSize: '1.25rem', padding: '1rem' }} />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem', background: 'var(--success)' }}>Submit Request</button>
-          </form>
-        </div>
-      )}
-
-      {showRepaymentForm && (
-        <div className="card" style={{ marginBottom: '2rem', animation: 'fadeIn 0.3s ease', border: '1px solid var(--success)' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, color: 'var(--success)' }}>Log Commission Offset</h3>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>This reduces the owner's credit balance without affecting the company bank account.</p>
+              <div className="form-group" style={{ flex: '1 1 150px', marginBottom: 0 }}>
+                <label>Amount (₹)</label>
+                <input type="number" step="0.01" required value={newRepayment.amount} onChange={e => setNewRepayment({...newRepayment, amount: e.target.value})} placeholder="0.00" style={{ fontSize: '1.25rem', padding: '1rem' }} />
+              </div>
+              <div className="form-group" style={{ flex: '1 1 150px', marginBottom: 0 }}>
+                <label>Date</label>
+                <input type="date" required value={newRepayment.date} onChange={e => setNewRepayment({...newRepayment, date: e.target.value})} max={new Date().toISOString().split('T')[0]} style={{ fontSize: '1.25rem', padding: '1rem' }} />
+              </div>
+              <div className="form-group" style={{ flex: '2 1 250px', marginBottom: 0 }}>
+                <label>Purpose / Note</label>
+                <input type="text" required value={newRepayment.purpose} onChange={e => setNewRepayment({...newRepayment, purpose: e.target.value})} placeholder="e.g. September Commission" style={{ fontSize: '1.25rem', padding: '1rem' }} />
+              </div>
+              <button type="submit" className="btn btn-success" style={{ padding: '1rem 2rem', fontSize: '1.1rem', background: 'var(--success)' }}>Log Offset</button>
+            </form>
           </div>
-          <form onSubmit={handleLogRepayment} style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
-              <label>Select Owner</label>
-              <CustomSelect 
-                required
-                value={newRepayment.owner} 
-                onChange={val => setNewRepayment({...newRepayment, owner: val})} 
-                options={owners.map(o => ({ value: o.id, label: o.username }))}
-              />
-            </div>
-            <div className="form-group" style={{ flex: '1 1 150px', marginBottom: 0 }}>
-              <label>Amount (₹)</label>
-              <input type="number" step="0.01" required value={newRepayment.amount} onChange={e => setNewRepayment({...newRepayment, amount: e.target.value})} placeholder="0.00" style={{ fontSize: '1.25rem', padding: '1rem' }} />
-            </div>
-            <div className="form-group" style={{ flex: '1 1 150px', marginBottom: 0 }}>
-              <label>Date</label>
-              <input type="date" required value={newRepayment.date} onChange={e => setNewRepayment({...newRepayment, date: e.target.value})} max={new Date().toISOString().split('T')[0]} style={{ fontSize: '1.25rem', padding: '1rem' }} />
-            </div>
-            <div className="form-group" style={{ flex: '2 1 250px', marginBottom: 0 }}>
-              <label>Purpose / Note</label>
-              <input type="text" required value={newRepayment.purpose} onChange={e => setNewRepayment({...newRepayment, purpose: e.target.value})} placeholder="e.g. September Commission" style={{ fontSize: '1.25rem', padding: '1rem' }} />
-            </div>
-            <button type="submit" className="btn btn-success" style={{ padding: '1rem 2rem', fontSize: '1.1rem', background: 'var(--success)' }}>Log Offset</button>
-          </form>
-        </div>
+        )
       )}
 
       <div className="card">
-        <div className="action-bar" style={{ background: 'transparent', border: 'none', padding: 0, marginBottom: '1rem' }}>
+        <div className="action-bar" style={{ background: 'transparent', border: 'none', padding: 0, marginBottom: '1rem', flexDirection: isMobile ? 'column' : 'row', gap: '0.75rem' }}>
           <div className="action-bar-left">
-            <h3 className="card-title" style={{ margin: 0 }}>Drawings Ledger</h3>
+            <h3 className="card-title" style={{ margin: 0, fontSize: isMobile ? '1.1rem' : '1.25rem' }}>Drawings Ledger</h3>
           </div>
-          <div className="action-bar-right">
-            <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by note or owner name..." />
+          <div className="action-bar-right" style={{ width: isMobile ? '100%' : 'auto' }}>
+            <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by note or owner..." />
           </div>
         </div>
 
-        <div className="table-container">
-          <table className="responsive-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Owner</th>
-                <th>Note</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Funded From</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledgerPagination.currentData.map(item => (
-                <tr key={`${item.type}-${item.id}`}>
-                  <td data-label="Date">{new Date(item.date).toLocaleDateString()}</td>
-                  <td className="strong" data-label="Owner">{item.owner_name}</td>
-                  <td data-label="Note">
-                    {item.purpose}
-                    {item.type === 'REPAYMENT' && <span style={{ fontSize: '0.75rem', color: 'var(--success)', marginLeft: '0.5rem' }}>(Commission Offset)</span>}
-                  </td>
-                  <td className="strong" data-label="Amount" style={{ color: item.type === 'REPAYMENT' ? 'var(--success)' : 'var(--danger)' }}>
+        {isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {ledgerPagination.currentData.map(item => (
+              <div key={`${item.type}-${item.id}`} className="card" style={{ padding: '0.85rem', marginBottom: 0, border: '1px solid var(--border-color)', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <div>
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.owner_name}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>• {new Date(item.date).toLocaleDateString()}</span>
+                  </div>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 800, color: item.type === 'REPAYMENT' ? 'var(--success)' : 'var(--danger)' }}>
                     {item.type === 'REPAYMENT' ? '-' : ''}{formatCurrency(item.amount)}
-                  </td>
-                  <td data-label="Status">
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.82rem', marginBottom: '0.4rem' }}>
+                  {item.purpose}
+                  {item.type === 'REPAYMENT' && <span style={{ fontSize: '0.7rem', color: 'var(--success)', marginLeft: '0.35rem' }}>(Commission Offset)</span>}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     {item.type === 'DRAWING' ? (
-                      <span className={`badge ${item.status === 'APPROVED' ? 'badge-success' : item.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}>
+                      <span className={`badge ${item.status === 'APPROVED' ? 'badge-success' : item.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: '0.65rem' }}>
                         {item.status}
                       </span>
                     ) : (
-                      <span className="badge badge-success">APPLIED</span>
+                      <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>APPLIED</span>
                     )}
-                  </td>
-                  <td data-label="Funded From">{item.type === 'DRAWING' ? (item.source_bank_name || '-') : 'Ledger Offset'}</td>
-                  <td data-label="Actions">
-                    {item.type === 'DRAWING' && item.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
-                      approvingId === item.id ? (
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-                          <CustomSelect 
-                            value={approvalBank} 
-                            onChange={setApprovalBank} 
-                            placeholder="Select Bank..."
-                            options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
-                          />
-                          <button onClick={() => handleApprove(item.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={16}/></button>
-                          <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={16}/></button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button onClick={() => setApprovingId(item.id)} className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
-                          <button onClick={() => handleReject(item.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
-                        </div>
-                      )
-                    )}
-                  </td>
+                    <span>{item.type === 'DRAWING' ? (item.source_bank_name || '-') : 'Ledger Offset'}</span>
+                  </div>
+                  {item.type === 'DRAWING' && item.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
+                    approvingId === item.id ? (
+                      <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                        <CustomSelect 
+                          value={approvalBank} 
+                          onChange={setApprovalBank} 
+                          placeholder="Bank..."
+                          options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
+                        />
+                        <button onClick={() => handleApprove(item.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={15}/></button>
+                        <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={15}/></button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.3rem' }}>
+                        <button onClick={() => setApprovingId(item.id)} className="btn btn-success" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
+                        <button onClick={() => handleReject(item.id)} className="btn btn-danger" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            ))}
+            {ledgerPagination.currentData.length === 0 && (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No ledger items found.</div>
+            )}
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="responsive-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Owner</th>
+                  <th>Note</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Funded From</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-              {ledgerPagination.currentData.length === 0 && <tr><td colSpan="7" style={{textAlign: 'center', padding: '2rem'}}>No ledger items found.</td></tr>}
-            </tbody>
-          </table>
-          <Pagination {...ledgerPagination} />
-        </div>
+              </thead>
+              <tbody>
+                {ledgerPagination.currentData.map(item => (
+                  <tr key={`${item.type}-${item.id}`}>
+                    <td data-label="Date">{new Date(item.date).toLocaleDateString()}</td>
+                    <td className="strong" data-label="Owner">{item.owner_name}</td>
+                    <td data-label="Note">
+                      {item.purpose}
+                      {item.type === 'REPAYMENT' && <span style={{ fontSize: '0.75rem', color: 'var(--success)', marginLeft: '0.5rem' }}>(Commission Offset)</span>}
+                    </td>
+                    <td className="strong" data-label="Amount" style={{ color: item.type === 'REPAYMENT' ? 'var(--success)' : 'var(--danger)' }}>
+                      {item.type === 'REPAYMENT' ? '-' : ''}{formatCurrency(item.amount)}
+                    </td>
+                    <td data-label="Status">
+                      {item.type === 'DRAWING' ? (
+                        <span className={`badge ${item.status === 'APPROVED' ? 'badge-success' : item.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}>
+                          {item.status}
+                        </span>
+                      ) : (
+                        <span className="badge badge-success">APPLIED</span>
+                      )}
+                    </td>
+                    <td data-label="Funded From">{item.type === 'DRAWING' ? (item.source_bank_name || '-') : 'Ledger Offset'}</td>
+                    <td data-label="Actions">
+                      {item.type === 'DRAWING' && item.status === 'PENDING' && user.role === 'ACCOUNTANT' && (
+                        approvingId === item.id ? (
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+                            <CustomSelect 
+                              value={approvalBank} 
+                              onChange={setApprovalBank} 
+                              placeholder="Select Bank..."
+                              options={bankAccounts.map(b => ({ value: b.id, label: b.name }))}
+                            />
+                            <button onClick={() => handleApprove(item.id)} className="btn btn-success" style={{ padding: '0.25rem', background: 'var(--success)', border: 'none', color: '#fff' }}><CheckCircle size={16}/></button>
+                            <button onClick={() => setApprovingId(null)} className="btn" style={{ padding: '0.25rem', background: 'transparent' }}><X size={16}/></button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setApprovingId(item.id)} className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--success)', color: '#fff' }}>Approve</button>
+                            <button onClick={() => handleReject(item.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'var(--danger)', color: '#fff' }}>Reject</button>
+                          </div>
+                        )
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {ledgerPagination.currentData.length === 0 && <tr><td colSpan="7" style={{textAlign: 'center', padding: '2rem'}}>No ledger items found.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <Pagination {...ledgerPagination} />
       </div>
     </div>
   );

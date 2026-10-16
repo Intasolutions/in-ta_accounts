@@ -147,6 +147,11 @@ class Invoice(models.Model):
     revenue_share_seats_sold = models.IntegerField(null=True, blank=True, help_text="Number of seats sold")
     revenue_share_scope = models.ForeignKey(RevenueShareScope, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
 
+    # Advance & Balance tracking
+    advance_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Explicit advance amount override")
+    advance_date = models.DateField(null=True, blank=True, help_text="Date advance was paid")
+    balance_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Explicit balance amount override")
+
     class Meta:
         ordering = ['-id']
 

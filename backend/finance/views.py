@@ -23,6 +23,7 @@ from .serializers import (
     QuotationSerializer
 )
 from .utils.invoice_generator import generate_invoice_pdf
+from .utils.quotation_generator import generate_quotation_pdf
 
 
 
@@ -334,8 +335,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         pdf_bytes = invoice.pdf_file.read()
         
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        filename = f"INV_{invoice.id}_{invoice.date.strftime('%Y%m%d')}.pdf"
-        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        filename = f"INV_{str(invoice.id).zfill(4)}_{invoice.date.strftime('%Y%m%d')}.pdf"
+        disposition_type = 'attachment' if request.query_params.get('download') == '1' else 'inline'
+        response['Content-Disposition'] = f'{disposition_type}; filename="{filename}"'
+        response['Content-Length'] = len(pdf_bytes)
         return response
 
 class AdvanceWalletViewSet(viewsets.ModelViewSet):
@@ -443,10 +446,11 @@ class CompanyExpenseViewSet(viewsets.ModelViewSet):
     serializer_class = CompanyExpenseSerializer
 
     def get_queryset(self):
+        queryset = CompanyExpense.objects.all()
         user = self.request.user
-        if user.is_authenticated and user.role == 'OWNER':
-            return CompanyExpense.objects.filter(logged_by=user)
-        return CompanyExpense.objects.all()
+        if self.request.query_params.get('mine') == '1' and user.is_authenticated:
+            queryset = queryset.filter(logged_by=user)
+        return queryset
 
     def perform_create(self, serializer):
         receipt_file = serializer.validated_data.pop('receipt_file', None)
@@ -646,6 +650,19 @@ class QuotationViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(created_by=self.request.user if self.request.user.is_authenticated else None)
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        quotation = self.get_object()
+        pdf_bytes = generate_quotation_pdf(quotation)
+        
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        safe_client = re.sub(r'[^a-zA-Z0-9]', '_', quotation.client_name or 'Client')
+        filename = f"{quotation.quote_no}_{safe_client}.pdf"
+        disposition_type = 'attachment' if request.query_params.get('download') == '1' else 'inline'
+        response['Content-Disposition'] = f'{disposition_type}; filename="{filename}"'
+        response['Content-Length'] = len(pdf_bytes)
+        return response
 
 class OwnerRepaymentViewSet(viewsets.ModelViewSet):
     queryset = OwnerRepayment.objects.all().order_by('-date')

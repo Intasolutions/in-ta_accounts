@@ -33,6 +33,14 @@ const Banking = () => {
   const [transactions, setTransactions] = useState([]);
   const [transactionSearch, setTransactionSearch] = useState('');
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -180,89 +188,179 @@ const Banking = () => {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSaveAccount} className="premium-form">
-          <div className="premium-form-header">
-            <h3 className="premium-form-title">{editingAccount ? 'Edit Account' : 'Add New Bank Account / Cash Drawer'}</h3>
+        isMobile ? (
+          <div className="modal-overlay" onClick={resetForm}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{editingAccount ? 'Edit Account' : 'Add Bank Account / Cash Drawer'}</h3>
+                <button type="button" className="btn" onClick={resetForm} style={{ padding: '0.25rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleSaveAccount} className="premium-form">
+                <div className="premium-form-grid">
+                  <div className="form-group">
+                    <label>Alias (e.g. Main Axis, Cash Box)</label>
+                    <input type="text" required value={newAccount.name} onChange={e => setNewAccount({...newAccount, name: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Bank Name</label>
+                    <input type="text" value={newAccount.bank_name} onChange={e => setNewAccount({...newAccount, bank_name: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Account Number</label>
+                    <input type="text" value={newAccount.account_number} onChange={e => setNewAccount({...newAccount, account_number: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>IFSC Code</label>
+                    <input type="text" value={newAccount.ifsc_code} onChange={e => setNewAccount({...newAccount, ifsc_code: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>UPI ID</label>
+                    <input type="text" value={newAccount.upi_id} onChange={e => setNewAccount({...newAccount, upi_id: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Initial/Current Balance (₹)</label>
+                    <input type="number" step="0.01" required value={newAccount.current_balance} onChange={e => setNewAccount({...newAccount, current_balance: e.target.value})} />
+                  </div>
+                </div>
+                <div className="premium-form-actions">
+                  <button type="button" className="btn" onClick={resetForm}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">{editingAccount ? 'Update Account' : 'Save Account'}</button>
+                </div>
+              </form>
+            </div>
           </div>
-          <div className="premium-form-grid">
-            <div className="form-group">
-              <label>Alias (e.g. Main Axis, Cash Box)</label>
-              <input type="text" required value={newAccount.name} onChange={e => setNewAccount({...newAccount, name: e.target.value})} />
+        ) : (
+          <form onSubmit={handleSaveAccount} className="premium-form">
+            <div className="premium-form-header">
+              <h3 className="premium-form-title">{editingAccount ? 'Edit Account' : 'Add New Bank Account / Cash Drawer'}</h3>
             </div>
-            <div className="form-group">
-              <label>Bank Name</label>
-              <input type="text" value={newAccount.bank_name} onChange={e => setNewAccount({...newAccount, bank_name: e.target.value})} />
+            <div className="premium-form-grid">
+              <div className="form-group">
+                <label>Alias (e.g. Main Axis, Cash Box)</label>
+                <input type="text" required value={newAccount.name} onChange={e => setNewAccount({...newAccount, name: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Bank Name</label>
+                <input type="text" value={newAccount.bank_name} onChange={e => setNewAccount({...newAccount, bank_name: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Account Number</label>
+                <input type="text" value={newAccount.account_number} onChange={e => setNewAccount({...newAccount, account_number: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>IFSC Code</label>
+                <input type="text" value={newAccount.ifsc_code} onChange={e => setNewAccount({...newAccount, ifsc_code: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>UPI ID</label>
+                <input type="text" value={newAccount.upi_id} onChange={e => setNewAccount({...newAccount, upi_id: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Initial/Current Balance (₹)</label>
+                <input type="number" step="0.01" required value={newAccount.current_balance} onChange={e => setNewAccount({...newAccount, current_balance: e.target.value})} />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Account Number</label>
-              <input type="text" value={newAccount.account_number} onChange={e => setNewAccount({...newAccount, account_number: e.target.value})} />
+            <div className="premium-form-actions">
+              <button type="button" className="btn" onClick={resetForm}>Cancel</button>
+              <button type="submit" className="btn btn-primary">{editingAccount ? 'Update Account' : 'Save Account'}</button>
             </div>
-            <div className="form-group">
-              <label>IFSC Code</label>
-              <input type="text" value={newAccount.ifsc_code} onChange={e => setNewAccount({...newAccount, ifsc_code: e.target.value})} />
-            </div>
-            <div className="form-group">
-              <label>UPI ID</label>
-              <input type="text" value={newAccount.upi_id} onChange={e => setNewAccount({...newAccount, upi_id: e.target.value})} />
-            </div>
-            <div className="form-group">
-              <label>Initial/Current Balance (₹)</label>
-              <input type="number" step="0.01" required value={newAccount.current_balance} onChange={e => setNewAccount({...newAccount, current_balance: e.target.value})} />
-            </div>
-          </div>
-          <div className="premium-form-actions">
-            <button type="button" className="btn" onClick={() => setShowForm(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary">{editingAccount ? 'Update Account' : 'Save Account'}</button>
-          </div>
-        </form>
+          </form>
+        )
       )}
 
       {showTransferForm && (
-        <form onSubmit={handleTransfer} className="premium-form" style={{ borderLeft: '4px solid var(--info)' }}>
-          <div className="premium-form-header">
-            <h3 className="premium-form-title" style={{ color: 'var(--info)' }}>Internal Transfer</h3>
-          </div>
-          <div className="premium-form-grid">
-            <div className="form-group">
-              <label>From Account</label>
-              <CustomSelect 
-                required
-                value={transferData.from_account} 
-                onChange={val => setTransferData({...transferData, from_account: val})} 
-                placeholder="Select Account..."
-                options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
-              />
+        isMobile ? (
+          <div className="modal-overlay" onClick={() => setShowTransferForm(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '92%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--info)' }}>Internal Transfer</h3>
+                <button type="button" className="btn" onClick={() => setShowTransferForm(false)} style={{ padding: '0.25rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleTransfer} className="premium-form" style={{ borderLeft: 'none' }}>
+                <div className="premium-form-grid">
+                  <div className="form-group">
+                    <label>From Account</label>
+                    <CustomSelect 
+                      required
+                      value={transferData.from_account} 
+                      onChange={val => setTransferData({...transferData, from_account: val})} 
+                      placeholder="Select Account..."
+                      options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>To Account</label>
+                    <CustomSelect 
+                      required
+                      value={transferData.to_account_id} 
+                      onChange={val => setTransferData({...transferData, to_account_id: val})} 
+                      placeholder="Select Account..."
+                      options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Amount (₹)</label>
+                    <input type="number" step="0.01" required value={transferData.amount} onChange={e => setTransferData({...transferData, amount: e.target.value})} placeholder="0.00" />
+                  </div>
+                </div>
+                <div className="premium-form-actions">
+                  <button type="button" className="btn" onClick={() => setShowTransferForm(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ background: 'var(--info)' }}>Transfer Funds</button>
+                </div>
+              </form>
             </div>
-            <div className="form-group">
-              <label>To Account</label>
-              <CustomSelect 
-                required
-                value={transferData.to_account_id} 
-                onChange={val => setTransferData({...transferData, to_account_id: val})} 
-                placeholder="Select Account..."
-                options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
-              />
-            </div>
-            <div className="form-group">
-              <label>Amount (₹)</label>
-              <input type="number" step="0.01" required value={transferData.amount} onChange={e => setTransferData({...transferData, amount: e.target.value})} placeholder="0.00" />
-            </div>
           </div>
-          <div className="premium-form-actions">
-            <button type="button" className="btn" onClick={() => setShowTransferForm(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ background: 'var(--info)' }}>Transfer Funds</button>
-          </div>
-        </form>
+        ) : (
+          <form onSubmit={handleTransfer} className="premium-form" style={{ borderLeft: '4px solid var(--info)' }}>
+            <div className="premium-form-header">
+              <h3 className="premium-form-title" style={{ color: 'var(--info)' }}>Internal Transfer</h3>
+            </div>
+            <div className="premium-form-grid">
+              <div className="form-group">
+                <label>From Account</label>
+                <CustomSelect 
+                  required
+                  value={transferData.from_account} 
+                  onChange={val => setTransferData({...transferData, from_account: val})} 
+                  placeholder="Select Account..."
+                  options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>To Account</label>
+                <CustomSelect 
+                  required
+                  value={transferData.to_account_id} 
+                  onChange={val => setTransferData({...transferData, to_account_id: val})} 
+                  placeholder="Select Account..."
+                  options={accounts.map(b => ({ value: b.id, label: `${b.name} (${formatCurrency(b.current_balance)})` }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Amount (₹)</label>
+                <input type="number" step="0.01" required value={transferData.amount} onChange={e => setTransferData({...transferData, amount: e.target.value})} placeholder="0.00" />
+              </div>
+            </div>
+            <div className="premium-form-actions">
+              <button type="button" className="btn" onClick={() => setShowTransferForm(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary" style={{ background: 'var(--info)' }}>Transfer Funds</button>
+            </div>
+          </form>
+        )
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
         {accounts.map(acc => (
-          <div key={acc.id} className="card" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div key={acc.id} className="card" style={{ position: 'relative', overflow: 'hidden', padding: isMobile ? '1rem' : '1.5rem', marginBottom: 0 }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: 'var(--primary-color)' }}></div>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
               <div>
-                <h3 style={{ margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.2rem' }}>
+                <h3 style={{ margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: isMobile ? '1.1rem' : '1.2rem' }}>
                   <Landmark size={20} className="text-primary" /> {acc.name}
                 </h3>
                 {acc.bank_name && <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{acc.bank_name}</p>}
@@ -277,9 +375,9 @@ const Banking = () => {
               </div>
             </div>
 
-            <div style={{ marginBottom: '1.5rem', background: 'rgba(0,0,0,0.1)', padding: '1rem', borderRadius: '0.5rem' }}>
-              <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>Live Balance</p>
-              <h2 style={{ margin: 0, fontSize: '2rem', color: 'var(--text-main)' }}>{formatCurrency(acc.current_balance)}</h2>
+            <div style={{ marginBottom: '1.25rem', background: 'rgba(0,0,0,0.1)', padding: isMobile ? '0.75rem 1rem' : '1rem', borderRadius: '0.5rem' }}>
+              <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>Live Balance</p>
+              <h2 style={{ margin: 0, fontSize: isMobile ? '1.5rem' : '2rem', color: 'var(--text-main)' }}>{formatCurrency(acc.current_balance)}</h2>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', fontSize: '0.85rem' }}>

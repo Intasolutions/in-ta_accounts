@@ -3,9 +3,13 @@ import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
-import { FileText, Plus, Trash2, Printer, Save, Calculator, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  FileText, Plus, Trash2, Printer, Save, Calculator, 
+  ChevronLeft, ChevronRight, ArrowLeft, Download, Share2, Eye 
+} from 'lucide-react';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
+import { downloadQuotationPdf } from '../utils/pdfDownloader';
 
 const Quotations = () => {
   const toast = useToast();
@@ -15,6 +19,17 @@ const Quotations = () => {
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+  const [mobileTab, setMobileTab] = useState('list'); // 'list' | 'editor'
+  const [downloadingQuoteId, setDownloadingQuoteId] = useState(null);
+
+  useEffect(() => {
+    const handleResizeWindow = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResizeWindow);
+    return () => window.removeEventListener('resize', handleResizeWindow);
+  }, []);
 
   const generateQuoteNo = (quotesList) => {
     if (!quotesList || quotesList.length === 0) return 'QT-227';
@@ -172,11 +187,71 @@ const Quotations = () => {
       items: rawData.items || defaultQuote.items
     });
     setEditingQuoteId(q.id);
+    if (isMobile) {
+      setMobileTab('editor');
+    }
   };
 
   const handleNewQuote = () => {
     setQuote(createDefaultQuote(quotations));
     setEditingQuoteId(null);
+    if (isMobile) {
+      setMobileTab('editor');
+    }
+  };
+
+  const handleDownloadPDF = async (q, isShare = false) => {
+    if (!q || !q.id) return;
+    setDownloadingQuoteId(q.id);
+    try {
+      await downloadQuotationPdf(q.id, {
+        quote_no: q.quote_no,
+        client_name: q.client_name,
+        company_name: q.raw_data?.client_company
+      }, { share: isShare });
+      if (!isShare) {
+        toast.success(`Quotation ${q.quote_no} PDF ready!`);
+      }
+    } catch (err) {
+      console.error('Download quotation error:', err);
+      toast.error('Failed to download quotation PDF. Please try again.');
+    } finally {
+      setDownloadingQuoteId(null);
+    }
+  };
+
+  const handleDownloadCurrentPDF = async (isShare = false) => {
+    try {
+      let quoteId = editingQuoteId;
+      const payload = {
+        quote_no: quote.quote_no,
+        date: quote.date,
+        valid_until: quote.valid_until || null,
+        client_name: quote.client_name,
+        raw_data: quote
+      };
+
+      if (!quoteId) {
+        toast.info('Saving quotation before generating PDF...');
+        const res = await api.post('quotations/', payload);
+        quoteId = res.data.id;
+        setEditingQuoteId(quoteId);
+        fetchQuotations(quoteId);
+      } else {
+        await api.put(`quotations/${quoteId}/`, payload);
+        fetchQuotations(quoteId);
+      }
+
+      await handleDownloadPDF({
+        id: quoteId,
+        quote_no: quote.quote_no,
+        client_name: quote.client_name,
+        raw_data: quote
+      }, isShare);
+    } catch (err) {
+      console.error('Save & Download error:', err);
+      toast.error(err.response?.data?.quote_no ? 'Quote Number must be unique' : 'Failed to save and generate quotation PDF');
+    }
   };
 
   const handleDelete = async (id) => {
@@ -201,15 +276,35 @@ const Quotations = () => {
   return (
     <div className="quotation-page" style={{ height: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'column' }}>
       
+      {/* Mobile Tab Navigation Switcher */}
+      {isMobile && (
+        <div className="quotation-mobile-tabs no-print">
+          <button 
+            type="button"
+            className={`quotation-mobile-tab-btn ${mobileTab === 'list' ? 'active' : ''}`}
+            onClick={() => setMobileTab('list')}
+          >
+            <Calculator size={16} /> Saved Quotes ({quotations.length})
+          </button>
+          <button 
+            type="button"
+            className={`quotation-mobile-tab-btn ${mobileTab === 'editor' ? 'active' : ''}`}
+            onClick={() => setMobileTab('editor')}
+          >
+            <FileText size={16} /> {editingQuoteId ? `Edit ${quote.quote_no}` : 'New Quote'}
+          </button>
+        </div>
+      )}
+
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         
         {/* LEFT SIDEBAR */}
         <div className="no-print" style={{
-          width: isSidebarOpen ? '350px' : '0',
-          borderRight: isSidebarOpen ? '1px solid var(--border-color)' : 'none',
+          width: isMobile ? (mobileTab === 'list' ? '100%' : '0') : (isSidebarOpen ? '350px' : '0'),
+          display: isMobile && mobileTab !== 'list' ? 'none' : 'flex',
+          borderRight: !isMobile && isSidebarOpen ? '1px solid var(--border-color)' : 'none',
           background: '#ffffff',
           transition: 'width 0.3s ease',
-          display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           flexShrink: 0
@@ -254,10 +349,49 @@ const Quotations = () => {
                   <div style={{ fontWeight: 'bold', color: 'var(--success)', marginBottom: '0.75rem' }}>
                     {formatCurrency(total)}
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn" onClick={(e) => { e.stopPropagation(); handlePrintQuote(q); }} style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', background: '#e2e8f0', color: '#0f172a', fontWeight: '500' }}><Printer size={14} /> Print</button>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <button 
+                      className="btn" 
+                      onClick={(e) => { e.stopPropagation(); handleView(q); }} 
+                      style={{ flex: 1, minWidth: '65px', padding: '0.35rem 0.5rem', fontSize: '0.8rem', background: '#f1f5f9', color: '#0f172a', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                    >
+                      <Eye size={13} /> View
+                    </button>
+                    <button 
+                      className="btn" 
+                      onClick={(e) => { e.stopPropagation(); handleDownloadPDF(q, false); }} 
+                      disabled={downloadingQuoteId === q.id}
+                      style={{ flex: 1, minWidth: '65px', padding: '0.35rem 0.5rem', fontSize: '0.8rem', background: 'var(--primary-color)', color: '#ffffff', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                    >
+                      <Download size={13} /> {downloadingQuoteId === q.id ? '...' : 'PDF'}
+                    </button>
+                    <button 
+                      className="btn" 
+                      onClick={(e) => { e.stopPropagation(); handleDownloadPDF(q, true); }} 
+                      title="Share Quote"
+                      style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', background: '#25D366', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Share2 size={13} />
+                    </button>
+                    {!isMobile && (
+                      <button 
+                        className="btn" 
+                        onClick={(e) => { e.stopPropagation(); handlePrintQuote(q); }} 
+                        title="Print via Browser"
+                        style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', background: '#e2e8f0', color: '#0f172a' }}
+                      >
+                        <Printer size={13} />
+                      </button>
+                    )}
                     {user?.role === 'ACCOUNTANT' || user?.role === 'OWNER' ? (
-                      <button className="btn" onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }} style={{ padding: '0.4rem', color: 'var(--danger)', background: '#fee2e2' }}><Trash2 size={14}/></button>
+                      <button 
+                        className="btn" 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(q.id); }} 
+                        title="Delete"
+                        style={{ padding: '0.35rem 0.5rem', color: 'var(--danger)', background: '#fee2e2' }}
+                      >
+                        <Trash2 size={13}/>
+                      </button>
                     ): null}
                   </div>
                 </div>
@@ -271,25 +405,78 @@ const Quotations = () => {
         </div>
 
         {/* RIGHT SIDEBAR (BUILDER) */}
-        <div style={{ flex: 1, overflowY: 'auto', background: '#f1f5f9', position: 'relative' }}>
+        <div style={{ 
+          flex: 1, 
+          overflowY: 'auto', 
+          background: '#f1f5f9', 
+          position: 'relative',
+          display: isMobile && mobileTab !== 'editor' ? 'none' : 'block'
+        }}>
           
-          <button 
-            className="no-print btn"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, padding: '0.5rem', background: '#fff', color: '#0f172a', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderRadius: '50%' }}
-            title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-          >
-            {isSidebarOpen ? <ChevronLeft size={18}/> : <ChevronRight size={18}/>}
-          </button>
+          {!isMobile && (
+            <button 
+              className="no-print btn"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, padding: '0.5rem', background: '#fff', color: '#0f172a', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderRadius: '50%' }}
+              title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            >
+              {isSidebarOpen ? <ChevronLeft size={18}/> : <ChevronRight size={18}/>}
+            </button>
+          )}
 
-          <div className="builder-container" style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
-            <div className="action-bar no-print" style={{ marginBottom: '1rem', background: '#ffffff', padding: '1rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '3rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a', fontWeight: 'bold' }}>{quote.quote_no ? `Editing ${quote.quote_no}` : 'New Quotation'}</h2>
+          <div className="builder-container" style={{ padding: isMobile ? '0.75rem' : '2rem', maxWidth: '900px', margin: '0 auto' }}>
+            <div className="action-bar no-print" style={{ 
+              marginBottom: '1rem', 
+              background: '#ffffff', 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)', 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: isMobile ? '0' : '3rem' }}>
+                {isMobile && (
+                  <button 
+                    type="button" 
+                    className="btn" 
+                    onClick={() => setMobileTab('list')}
+                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem', background: '#f1f5f9', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                  >
+                    <ArrowLeft size={16} /> Back
+                  </button>
+                )}
+                <h2 style={{ margin: 0, fontSize: isMobile ? '1.05rem' : '1.2rem', color: '#0f172a', fontWeight: 'bold' }}>
+                  {quote.quote_no ? `Editing ${quote.quote_no}` : 'New Quotation'}
+                </h2>
               </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button className="btn btn-primary" onClick={handleSave}><Save size={18} /> Save</button>
-                <button className="btn" onClick={handlePrint} style={{ background: 'var(--success)', color: 'white', borderColor: 'var(--success)' }}><Printer size={18} /> Print PDF</button>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button className="btn btn-primary" onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.75rem' }}>
+                  <Save size={16} /> Save
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={() => handleDownloadCurrentPDF(false)}
+                  disabled={downloadingQuoteId !== null}
+                  style={{ background: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.75rem' }}
+                >
+                  <Download size={16} /> {downloadingQuoteId !== null ? 'Generating...' : 'PDF'}
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={() => handleDownloadCurrentPDF(true)}
+                  title="Share via WhatsApp or Files"
+                  style={{ background: '#25D366', color: 'white', display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.75rem' }}
+                >
+                  <Share2 size={16} /> Share
+                </button>
+                {!isMobile && (
+                  <button className="btn" onClick={handlePrint} style={{ background: '#475569', color: 'white', display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.75rem' }}>
+                    <Printer size={16} /> Print
+                  </button>
+                )}
               </div>
             </div>
 
@@ -360,67 +547,69 @@ const Quotations = () => {
                     </h4>
                   </div>
                 </div>
-                <table className="quote-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '55%' }}>Description</th>
-                      <th style={{ width: '15%', textAlign: 'center' }}>Quantity</th>
-                      <th style={{ width: '15%', textAlign: 'right' }}>Unit Price</th>
-                      <th style={{ width: '15%', textAlign: 'right' }}>Total</th>
-                      <th className="no-print" style={{ width: '5%' }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quote.items.map((item, index) => (
-                      <tr key={item.id}>
-                        <td>
-                          <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                            <textarea 
-                              value={item.heading}
-                              onChange={e => handleItemChange(item.id, 'heading', e.target.value, e)}
-                              placeholder={`Item ${index + 1} Heading...`}
-                              className="print-input"
-                              rows={item.heading ? item.heading.split('\n').length : 1}
-                              style={{ width: '100%', fontWeight: 'bold', resize: 'vertical', paddingBottom: '0.25rem', minHeight: '1.5rem' }}
-                            />
-                            <textarea 
-                              value={item.description} 
-                              onChange={e => handleItemChange(item.id, 'description', e.target.value, e)}
-                              placeholder={`Item ${index + 1} Description...`}
-                              rows={item.description ? item.description.split('\n').length : 1}
-                              className="print-input"
-                              style={{ width: '100%', resize: 'vertical', paddingTop: '0.25rem', color: '#475569', minHeight: '2rem' }}
-                            />
-                          </div>
-                          <div className="print-only" style={{ whiteSpace: 'pre-wrap' }}>
-                            <strong>{index + 1}. {item.heading}</strong>
-                            {item.description && <div>{item.description}</div>}
-                          </div>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <input className="no-print print-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(item.id, 'quantity', e.target.value)} style={{ width: '60px', textAlign: 'center' }}/>
-                          <span className="print-only">{item.quantity}</span>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <input className="no-print print-input" type="number" value={item.unit_price} onChange={e => handleItemChange(item.id, 'unit_price', e.target.value)} style={{ width: '100px', textAlign: 'right' }}/>
-                          <span className="print-only">{item.unit_price}</span>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <strong>{formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0))}</strong>
-                        </td>
-                        <td className="no-print">
-                          <button type="button" onClick={() => handleRemoveItem(item.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16}/></button>
+                <div className="quote-table-container">
+                  <table className="quote-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '55%' }}>Description</th>
+                        <th style={{ width: '15%', textAlign: 'center' }}>Quantity</th>
+                        <th style={{ width: '15%', textAlign: 'right' }}>Unit Price</th>
+                        <th style={{ width: '15%', textAlign: 'right' }}>Total</th>
+                        <th className="no-print" style={{ width: '5%' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quote.items.map((item, index) => (
+                        <tr key={item.id}>
+                          <td>
+                            <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <textarea 
+                                value={item.heading} 
+                                onChange={e => handleItemChange(item.id, 'heading', e.target.value, e)}
+                                placeholder={`Item ${index + 1} Heading...`}
+                                className="print-input"
+                                rows={item.heading ? item.heading.split('\n').length : 1}
+                                style={{ width: '100%', fontWeight: 'bold', resize: 'vertical', paddingBottom: '0.25rem', minHeight: '1.5rem' }}
+                              />
+                              <textarea 
+                                value={item.description} 
+                                onChange={e => handleItemChange(item.id, 'description', e.target.value, e)}
+                                placeholder={`Item ${index + 1} Description...`}
+                                rows={item.description ? item.description.split('\n').length : 1}
+                                className="print-input"
+                                style={{ width: '100%', resize: 'vertical', paddingTop: '0.25rem', color: '#475569', minHeight: '2rem' }}
+                              />
+                            </div>
+                            <div className="print-only" style={{ whiteSpace: 'pre-wrap' }}>
+                              <strong>{index + 1}. {item.heading}</strong>
+                              {item.description && <div>{item.description}</div>}
+                            </div>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <input className="no-print print-input" type="number" min="1" value={item.quantity} onChange={e => handleItemChange(item.id, 'quantity', e.target.value)} style={{ width: '60px', textAlign: 'center' }}/>
+                            <span className="print-only">{item.quantity}</span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <input className="no-print print-input" type="number" value={item.unit_price} onChange={e => handleItemChange(item.id, 'unit_price', e.target.value)} style={{ width: '100px', textAlign: 'right' }}/>
+                            <span className="print-only">{item.unit_price}</span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <strong>{formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0))}</strong>
+                          </td>
+                          <td className="no-print">
+                            <button type="button" onClick={() => handleRemoveItem(item.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16}/></button>
+                          </td>
+                        </tr>
+                      ))}
+                      
+                      <tr className="no-print">
+                        <td colSpan="5">
+                          <button className="btn btn-primary" onClick={handleAddItem} style={{ marginTop: '0.5rem' }}><Plus size={16} /> Add Item</button>
                         </td>
                       </tr>
-                    ))}
-                    
-                    <tr className="no-print">
-                      <td colSpan="5">
-                        <button className="btn btn-primary" onClick={handleAddItem} style={{ marginTop: '0.5rem' }}><Plus size={16} /> Add Item</button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                </div>
 
                 <div className="no-print toggle-container">
                   <div>
@@ -436,45 +625,47 @@ const Quotations = () => {
                 {quote.include_third_party && (
                   <div style={{ marginTop: '2rem' }}>
                     <h4 style={{ color: '#0f172a', marginBottom: '1rem', fontSize: '1rem', fontWeight: '800', fontFamily: "'Montserrat', sans-serif", textTransform: 'uppercase' }}>Third-Party Integration & API Costs</h4>
-                    <table className="quote-table third-party-table">
-                      <thead>
-                        <tr>
-                          <th style={{ width: '55%' }}>Description</th>
-                          <th style={{ width: '15%', textAlign: 'center' }}>GST %</th>
-                          <th style={{ width: '15%', textAlign: 'right' }}>Cost</th>
-                          <th style={{ width: '15%', textAlign: 'right' }}>Total (Inc. GST)</th>
-                          <th className="no-print" style={{ width: '5%' }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>
-                            <div className="no-print">
-                              <input type="text" value={quote.third_party_desc} onChange={e => setQuote({...quote, third_party_desc: e.target.value})} className="print-input" style={{ width: '100%', fontWeight: 'bold' }} />
-                            </div>
-                            <div className="print-only">
-                              <strong>* {quote.third_party_desc}</strong>
-                            </div>
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
-                              <input type="number" value={quote.third_party_gst} onChange={e => setQuote({...quote, third_party_gst: e.target.value})} className="print-input" style={{ width: '60px', textAlign: 'center' }}/>
-                            </div>
-                            <div className="print-only" style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                              {quote.third_party_gst}%
-                            </div>
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <input className="no-print print-input" type="number" value={quote.third_party_cost} onChange={e => setQuote({...quote, third_party_cost: e.target.value})} style={{ width: '100px', textAlign: 'right' }}/>
-                            <span className="print-only">{quote.third_party_cost}</span>
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <strong>{formatCurrency(calculateThirdPartyTotal())}</strong>
-                          </td>
-                          <td className="no-print"></td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <div className="quote-table-container">
+                      <table className="quote-table third-party-table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '55%' }}>Description</th>
+                            <th style={{ width: '15%', textAlign: 'center' }}>GST %</th>
+                            <th style={{ width: '15%', textAlign: 'right' }}>Cost</th>
+                            <th style={{ width: '15%', textAlign: 'right' }}>Total (Inc. GST)</th>
+                            <th className="no-print" style={{ width: '5%' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>
+                              <div className="no-print">
+                                <input type="text" value={quote.third_party_desc} onChange={e => setQuote({...quote, third_party_desc: e.target.value})} className="print-input" style={{ width: '100%', fontWeight: 'bold' }} />
+                              </div>
+                              <div className="print-only">
+                                <strong>* {quote.third_party_desc}</strong>
+                              </div>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                                <input type="number" value={quote.third_party_gst} onChange={e => setQuote({...quote, third_party_gst: e.target.value})} className="print-input" style={{ width: '60px', textAlign: 'center' }}/>
+                              </div>
+                              <div className="print-only" style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                                {quote.third_party_gst}%
+                              </div>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <input className="no-print print-input" type="number" value={quote.third_party_cost} onChange={e => setQuote({...quote, third_party_cost: e.target.value})} style={{ width: '100px', textAlign: 'right' }}/>
+                              <span className="print-only">{quote.third_party_cost}</span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <strong>{formatCurrency(calculateThirdPartyTotal())}</strong>
+                            </td>
+                            <td className="no-print"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
 

@@ -26,6 +26,14 @@ const Users = () => {
     role: 'ACCOUNTANT'
   });
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -130,105 +138,200 @@ const Users = () => {
       </div>
 
       {showUserForm && (
-        <div className="card" style={{ borderTop: '4px solid var(--primary-color)', marginBottom: '2rem' }}>
-          <h3 className="premium-form-title" style={{ marginBottom: '1.5rem' }}>
-            {editingUser ? 'Edit Team Member' : 'Add New Team Member'}
-          </h3>
-          <form onSubmit={handleSaveUser}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Username</label>
-                <input type="text" required value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} placeholder="e.g. jdoe" />
+        isMobile ? (
+          <div className="modal-overlay" onClick={() => { setShowUserForm(false); setEditingUser(null); }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{editingUser ? 'Edit Team Member' : 'Add Team Member'}</h3>
+                <button type="button" className="btn" onClick={() => { setShowUserForm(false); setEditingUser(null); }} style={{ padding: '0.25rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}>
+                  <X size={20} />
+                </button>
               </div>
-              <div className="form-group">
-                <label>Email Address</label>
-                <input type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="e.g. john@example.com" />
-              </div>
-              <div className="form-group">
-                <label>First Name</label>
-                <input type="text" value={newUser.first_name} onChange={e => setNewUser({...newUser, first_name: e.target.value})} placeholder="John" />
-              </div>
-              <div className="form-group">
-                <label>Last Name</label>
-                <input type="text" value={newUser.last_name} onChange={e => setNewUser({...newUser, last_name: e.target.value})} placeholder="Doe" />
-              </div>
-              <div className="form-group">
-                <label>System Role</label>
-                <CustomSelect 
-                  value={newUser.role} 
-                  onChange={val => setNewUser({...newUser, role: val})} 
-                  options={[
-                    { value: 'ACCOUNTANT', label: 'Accountant (Super Admin)' },
-                    { value: 'OWNER', label: 'Owner (View & Expenses Only)' }
-                  ]}
-                />
-              </div>
-              <div className="form-group">
-                <label>{editingUser ? 'New Password (leave blank to keep current)' : 'Password'}</label>
-                <input type="password" required={!editingUser} value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} placeholder="Secure password" />
-              </div>
+              <form onSubmit={handleSaveUser}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Username</label>
+                    <input type="text" required value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} placeholder="e.g. jdoe" />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Email Address</label>
+                    <input type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="e.g. john@example.com" />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>First Name</label>
+                      <input type="text" value={newUser.first_name} onChange={e => setNewUser({...newUser, first_name: e.target.value})} placeholder="John" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Last Name</label>
+                      <input type="text" value={newUser.last_name} onChange={e => setNewUser({...newUser, last_name: e.target.value})} placeholder="Doe" />
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>System Role</label>
+                    <CustomSelect 
+                      value={newUser.role} 
+                      onChange={val => setNewUser({...newUser, role: val})} 
+                      options={[
+                        { value: 'ACCOUNTANT', label: 'Accountant (Super Admin)' },
+                        { value: 'OWNER', label: 'Owner (View & Expenses Only)' }
+                      ]}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>{editingUser ? 'New Password (optional)' : 'Password'}</label>
+                    <input type="password" required={!editingUser} value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} placeholder="Secure password" />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => {
+                    setShowUserForm(false);
+                    setEditingUser(null);
+                    setNewUser({ username: '', email: '', password: '', first_name: '', last_name: '', role: 'ACCOUNTANT' });
+                  }}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Save User</button>
+                </div>
+              </form>
             </div>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => {
-                setShowUserForm(false);
-                setEditingUser(null);
-                setNewUser({ username: '', email: '', password: '', first_name: '', last_name: '', role: 'ACCOUNTANT' });
-              }}>Cancel</button>
-              <button type="submit" className="btn btn-primary">Save User</button>
-            </div>
-          </form>
-        </div>
+          </div>
+        ) : (
+          <div className="card" style={{ borderTop: '4px solid var(--primary-color)', marginBottom: '2rem' }}>
+            <h3 className="premium-form-title" style={{ marginBottom: '1.5rem' }}>
+              {editingUser ? 'Edit Team Member' : 'Add New Team Member'}
+            </h3>
+            <form onSubmit={handleSaveUser}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Username</label>
+                  <input type="text" required value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} placeholder="e.g. jdoe" />
+                </div>
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <input type="email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="e.g. john@example.com" />
+                </div>
+                <div className="form-group">
+                  <label>First Name</label>
+                  <input type="text" value={newUser.first_name} onChange={e => setNewUser({...newUser, first_name: e.target.value})} placeholder="John" />
+                </div>
+                <div className="form-group">
+                  <label>Last Name</label>
+                  <input type="text" value={newUser.last_name} onChange={e => setNewUser({...newUser, last_name: e.target.value})} placeholder="Doe" />
+                </div>
+                <div className="form-group">
+                  <label>System Role</label>
+                  <CustomSelect 
+                    value={newUser.role} 
+                    onChange={val => setNewUser({...newUser, role: val})} 
+                    options={[
+                      { value: 'ACCOUNTANT', label: 'Accountant (Super Admin)' },
+                      { value: 'OWNER', label: 'Owner (View & Expenses Only)' }
+                    ]}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{editingUser ? 'New Password (leave blank to keep current)' : 'Password'}</label>
+                  <input type="password" required={!editingUser} value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} placeholder="Secure password" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => {
+                  setShowUserForm(false);
+                  setEditingUser(null);
+                  setNewUser({ username: '', email: '', password: '', first_name: '', last_name: '', role: 'ACCOUNTANT' });
+                }}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save User</button>
+              </div>
+            </form>
+          </div>
+        )
       )}
 
-      <div className="card" style={{ padding: 0 }}>
-        <div className="table-container">
-          <table className="responsive-table">
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(u => (
-                <tr key={u.id}>
-                  <td className="strong" data-label="Username">@{u.username}</td>
-                  <td data-label="Name">{u.first_name} {u.last_name}</td>
-                  <td data-label="Email">{u.email}</td>
-                  <td data-label="Role">
-                    <span className="badge" style={{ 
-                      background: u.role === 'OWNER' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                      color: u.role === 'OWNER' ? 'var(--primary-color)' : 'var(--success)'
-                    }}>
-                      {u.role === 'OWNER' && <Shield size={12} style={{ marginRight: '4px' }} />}
-                      {u.role}
-                    </span>
-                  </td>
-                  <td data-label="Status">
-                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>Active</span>
-                  </td>
-                  <td data-label="Actions" style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      <button className="btn" onClick={() => handleEditUser(u)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }} title="Edit">
-                        <Edit2 size={16} />
-                      </button>
-                      {u.id !== user.id && (
-                        <button className="btn" onClick={() => handleDeleteUser(u.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }} title="Delete">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {isMobile ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          {users.map(u => (
+            <div key={u.id} className="card" style={{ padding: '0.85rem', marginBottom: 0, border: '1px solid var(--border-color)', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.35rem' }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>@{u.username}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.first_name} {u.last_name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                </div>
+                <span className="badge" style={{ 
+                  background: u.role === 'OWNER' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                  color: u.role === 'OWNER' ? 'var(--primary-color)' : 'var(--success)',
+                  fontSize: '0.7rem'
+                }}>
+                  {u.role === 'OWNER' && <Shield size={11} style={{ marginRight: '3px' }} />}
+                  {u.role}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', fontSize: '0.65rem' }}>Active</span>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn" onClick={() => handleEditUser(u)} style={{ padding: '0.25rem 0.5rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <Edit2 size={13} /> Edit
+                  </button>
+                  {u.id !== user.id && (
+                    <button className="btn" onClick={() => handleDeleteUser(u.id)} style={{ padding: '0.25rem 0.5rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      ) : (
+        <div className="card" style={{ padding: 0 }}>
+          <div className="table-container">
+            <table className="responsive-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id}>
+                    <td className="strong" data-label="Username">@{u.username}</td>
+                    <td data-label="Name">{u.first_name} {u.last_name}</td>
+                    <td data-label="Email">{u.email}</td>
+                    <td data-label="Role">
+                      <span className="badge" style={{ 
+                        background: u.role === 'OWNER' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                        color: u.role === 'OWNER' ? 'var(--primary-color)' : 'var(--success)'
+                      }}>
+                        {u.role === 'OWNER' && <Shield size={12} style={{ marginRight: '4px' }} />}
+                        {u.role}
+                      </span>
+                    </td>
+                    <td data-label="Status">
+                      <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>Active</span>
+                    </td>
+                    <td data-label="Actions" style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button className="btn" onClick={() => handleEditUser(u)} style={{ padding: '0.25rem', color: 'var(--primary-color)', background: 'transparent' }} title="Edit">
+                          <Edit2 size={16} />
+                        </button>
+                        {u.id !== user.id && (
+                          <button className="btn" onClick={() => handleDeleteUser(u.id)} style={{ padding: '0.25rem', color: 'var(--danger)', background: 'transparent' }} title="Delete">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

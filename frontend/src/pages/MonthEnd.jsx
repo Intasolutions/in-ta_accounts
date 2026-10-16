@@ -19,6 +19,14 @@ const MonthEnd = () => {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     generateMonths();
     fetchLocks();
@@ -114,7 +122,60 @@ const MonthEnd = () => {
             const lockInfo = locks[m.month_year];
             const isLocked = lockInfo?.is_locked || false;
             
-            return (
+            return isMobile ? (
+              <div key={m.month_year} className="card" style={{ padding: '0.9rem', marginBottom: 0, border: '1px solid var(--border-color)', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{m.label}</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Period: {m.month_year}</span>
+                  </div>
+                  <span className={`badge ${isLocked ? 'badge-danger' : 'badge-success'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.6rem', fontSize: '0.72rem' }}>
+                    {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                    {isLocked ? 'LOCKED' : 'OPEN'}
+                  </span>
+                </div>
+                
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+                  {isLocked ? `Locked by ${lockInfo.locked_by_name || 'System'} on ${new Date(lockInfo.locked_at).toLocaleDateString()}` : 'Pending Closure'}
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button 
+                    className="btn" 
+                    style={{ 
+                      flex: 1,
+                      padding: '0.45rem', 
+                      background: isLocked ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                      color: isLocked ? 'var(--danger)' : 'var(--success)',
+                      border: isLocked ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
+                      borderRadius: '6px',
+                      fontWeight: '600',
+                      fontSize: '0.8rem'
+                    }}
+                    onClick={() => toggleLock(m.month_year, lockInfo)}
+                  >
+                    {isLocked ? 'Unlock' : 'Lock'}
+                  </button>
+                  <button 
+                    className="btn btn-primary"
+                    style={{ 
+                      flex: 1,
+                      padding: '0.45rem', 
+                      borderRadius: '6px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      fontWeight: '600',
+                      fontSize: '0.8rem'
+                    }}
+                    onClick={() => viewReport(m.month_year, m.label)}
+                  >
+                    <FileText size={14} /> Report
+                  </button>
+                </div>
+              </div>
+            ) : (
               <div key={m.month_year} className="month-card">
                 <div className="month-card-info">
                   <div style={{ width: '180px' }}>

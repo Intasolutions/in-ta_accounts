@@ -138,6 +138,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'finance.User'
 
 CORS_ALLOW_ALL_ORIGINS = True # Change in strict production if needed, or define CORS_ALLOWED_ORIGINS
+CORS_EXPOSE_HEADERS = ['Content-Disposition']
 
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 

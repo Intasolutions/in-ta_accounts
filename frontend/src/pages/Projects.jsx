@@ -19,6 +19,13 @@ const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('projects');
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [clientSearch, setClientSearch] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
@@ -257,70 +264,135 @@ const Projects = () => {
             </div>
 
             {showClientForm && (
-              <form onSubmit={handleAddClient} className="premium-form">
-                <div className="premium-form-header">
-                  <h3 className="premium-form-title">{editingClient ? 'Edit Client Details' : 'Add New Client'}</h3>
+              isMobile ? (
+                <div className="modal-overlay" onClick={() => setShowClientForm(false)}>
+                  <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '92%', maxHeight: '90vh', overflowY: 'auto', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.75rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{editingClient ? 'Edit Client Details' : 'Add New Client'}</h3>
+                      <button type="button" className="btn" onClick={() => setShowClientForm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.25rem' }}><X size={20}/></button>
+                    </div>
+                    <form onSubmit={handleAddClient} className="premium-form" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
+                      <div className="premium-form-grid" style={{ gridTemplateColumns: '1fr', gap: '0.75rem' }}>
+                        <div className="form-group">
+                          <label>Contact Name</label>
+                          <input type="text" required value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} placeholder="e.g. John Doe" />
+                        </div>
+                        <div className="form-group">
+                          <label>Company Name</label>
+                          <input type="text" value={newClient.company_name} onChange={e => setNewClient({...newClient, company_name: e.target.value})} placeholder="e.g. Acme Corp" />
+                        </div>
+                        <div className="form-group">
+                          <label>Phone Number</label>
+                          <input type="text" value={newClient.phone_number} onChange={e => setNewClient({...newClient, phone_number: e.target.value})} placeholder="e.g. +91 9876543210" />
+                        </div>
+                        <div className="form-group">
+                          <label>Address</label>
+                          <textarea value={newClient.address} onChange={e => setNewClient({...newClient, address: e.target.value})} placeholder="e.g. 123 Business Rd..." rows="2" />
+                        </div>
+                      </div>
+                      <div className="premium-form-actions" style={{ marginTop: '1.25rem' }}>
+                        <button type="button" className="btn" onClick={() => setShowClientForm(false)}>Cancel</button>
+                        <button type="submit" className="btn btn-primary">{editingClient ? 'Update Client' : 'Save Client'}</button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
-                <div className="premium-form-grid">
-                  <div className="form-group">
-                    <label>Contact Name</label>
-                    <input type="text" required value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} placeholder="e.g. John Doe" />
+              ) : (
+                <form onSubmit={handleAddClient} className="premium-form">
+                  <div className="premium-form-header">
+                    <h3 className="premium-form-title">{editingClient ? 'Edit Client Details' : 'Add New Client'}</h3>
                   </div>
-                  <div className="form-group">
-                    <label>Company Name</label>
-                    <input type="text" value={newClient.company_name} onChange={e => setNewClient({...newClient, company_name: e.target.value})} placeholder="e.g. Acme Corp" />
+                  <div className="premium-form-grid">
+                    <div className="form-group">
+                      <label>Contact Name</label>
+                      <input type="text" required value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} placeholder="e.g. John Doe" />
+                    </div>
+                    <div className="form-group">
+                      <label>Company Name</label>
+                      <input type="text" value={newClient.company_name} onChange={e => setNewClient({...newClient, company_name: e.target.value})} placeholder="e.g. Acme Corp" />
+                    </div>
+                    <div className="form-group">
+                      <label>Phone Number</label>
+                      <input type="text" value={newClient.phone_number} onChange={e => setNewClient({...newClient, phone_number: e.target.value})} placeholder="e.g. +91 9876543210" />
+                    </div>
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label>Address</label>
+                      <textarea value={newClient.address} onChange={e => setNewClient({...newClient, address: e.target.value})} placeholder="e.g. 123 Business Rd..." rows="2" />
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>Phone Number</label>
-                    <input type="text" value={newClient.phone_number} onChange={e => setNewClient({...newClient, phone_number: e.target.value})} placeholder="e.g. +91 9876543210" />
+                  <div className="premium-form-actions">
+                    <button type="button" className="btn" onClick={() => setShowClientForm(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">{editingClient ? 'Update Client' : 'Save Client'}</button>
                   </div>
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label>Address</label>
-                    <textarea value={newClient.address} onChange={e => setNewClient({...newClient, address: e.target.value})} placeholder="e.g. 123 Business Rd..." rows="2" />
-                  </div>
-                </div>
-                <div className="premium-form-actions">
-                  <button type="button" className="btn" onClick={() => setShowClientForm(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">{editingClient ? 'Update Client' : 'Save Client'}</button>
-                </div>
-              </form>
+                </form>
+              )
             )}
 
             <div className="table-container">
-              <table className="responsive-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th>Contact Name</th>
-                    <th>Company</th>
-                    <th>Phone</th>
-                    <th>Address</th>
-                    <th>Created</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              {isMobile ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   {clientsPagination.currentData.map(c => (
-                    <tr key={c.id}>
-                      <td className="strong" data-label="Contact Name">{c.name}</td>
-                      <td data-label="Company">{c.company_name || '-'}</td>
-                      <td data-label="Phone">{c.phone_number || '-'}</td>
-                      <td style={{ maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.address} data-label="Address">{c.address || '-'}</td>
-                      <td data-label="Created">{new Date(c.created_at).toLocaleDateString()}</td>
-                      <td data-label="Actions">
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          {user?.role === 'ACCOUNTANT' && (
-                            <>
-                              <button className="btn" onClick={() => handleEditClient(c)} style={{ padding: '0.5rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)' }} title="Edit"><Edit2 size={16}/></button>
-                              <button className="btn" onClick={() => handleDeleteClient(c.id)} style={{ padding: '0.5rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)' }} title="Delete"><Trash2 size={16}/></button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                    <div key={c.id} className="card" style={{ padding: '0.75rem', marginBottom: 0, borderRadius: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>{c.name}</strong>
+                        {c.phone_number && (
+                          <a href={`tel:${c.phone_number}`} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', textDecoration: 'none' }}>
+                            {c.phone_number}
+                          </a>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                        {c.company_name || 'Individual Client'} {c.address ? `• ${c.address}` : ''}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.35rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Created {new Date(c.created_at).toLocaleDateString()}</span>
+                        {user?.role === 'ACCOUNTANT' && (
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <button className="btn" onClick={() => handleEditClient(c)} style={{ padding: '0.3rem 0.5rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px' }} title="Edit"><Edit2 size={14}/></button>
+                            <button className="btn" onClick={() => handleDeleteClient(c.id)} style={{ padding: '0.3rem 0.5rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px' }} title="Delete"><Trash2 size={14}/></button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
-                  {clientsPagination.currentData.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No clients found.</td></tr>}
-                </tbody>
-              </table>
+                  {clientsPagination.currentData.length === 0 && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No clients found.</div>}
+                </div>
+              ) : (
+                <table className="responsive-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>Contact Name</th>
+                      <th>Company</th>
+                      <th>Phone</th>
+                      <th>Address</th>
+                      <th>Created</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientsPagination.currentData.map(c => (
+                      <tr key={c.id}>
+                        <td className="strong" data-label="Contact Name">{c.name}</td>
+                        <td data-label="Company">{c.company_name || '-'}</td>
+                        <td data-label="Phone">{c.phone_number || '-'}</td>
+                        <td style={{ maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.address} data-label="Address">{c.address || '-'}</td>
+                        <td data-label="Created">{new Date(c.created_at).toLocaleDateString()}</td>
+                        <td data-label="Actions">
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            {user?.role === 'ACCOUNTANT' && (
+                              <>
+                                <button className="btn" onClick={() => handleEditClient(c)} style={{ padding: '0.5rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)' }} title="Edit"><Edit2 size={16}/></button>
+                                <button className="btn" onClick={() => handleDeleteClient(c.id)} style={{ padding: '0.5rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)' }} title="Delete"><Trash2 size={16}/></button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {clientsPagination.currentData.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>No clients found.</td></tr>}
+                  </tbody>
+                </table>
+              )}
               <Pagination {...clientsPagination} />
             </div>
           </div>
@@ -344,126 +416,250 @@ const Projects = () => {
             </div>
 
             {showProjectForm && (
-              <form onSubmit={handleAddProject} className="premium-form">
-                <div className="premium-form-header">
-                  <h3 className="premium-form-title">{editingProject ? 'Edit Project' : 'Add New Project'}</h3>
-                </div>
-                <div className="premium-form-grid">
-                  <div className="form-group">
-                    <label>Project Name</label>
-                    <input type="text" required value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder="e.g. Website Redesign" />
-                  </div>
-                  <div className="form-group">
-                    <label>Client</label>
-                    <CustomSelect 
-                      required
-                      value={newProject.client} 
-                      onChange={val => setNewProject({...newProject, client: val})} 
-                      placeholder="Select Client..."
-                      options={clients.map(c => ({ value: c.id, label: c.name }))}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Revenue Model</label>
-                    <CustomSelect 
-                      required
-                      value={newProject.project_type} 
-                      onChange={val => setNewProject({...newProject, project_type: val})} 
-                      options={[
-                        { value: 'FIXED', label: 'Fixed Price' },
-                        { value: 'HOURLY', label: 'Hourly' },
-                        { value: 'AMC', label: 'AMC' },
-                        { value: 'REVENUE_SHARE', label: 'Revenue Share' }
-                      ]}
-                    />
-                  </div>
-
-                  {newProject.project_type === 'REVENUE_SHARE' && (
-                    <>
-                      <div className="form-group">
-                        <label>Revenue Share Type</label>
-                        <CustomSelect 
-                          required
-                          value={newProject.revenue_share_type} 
-                          onChange={val => setNewProject({...newProject, revenue_share_type: val})} 
-                          options={[
-                            { value: 'PROFIT_SHARE', label: 'Monthly Profit Share' },
-                            { value: 'PER_SEAT', label: 'Per Seat / Admission Share' }
-                          ]}
-                        />
-                      </div>
-                      {newProject.revenue_share_type === 'PROFIT_SHARE' && (
+              isMobile ? (
+                <div className="modal-overlay" onClick={() => setShowProjectForm(false)}>
+                  <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '550px', width: '92%', maxHeight: '90vh', overflowY: 'auto', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.75rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{editingProject ? 'Edit Project' : 'Add New Project'}</h3>
+                      <button type="button" className="btn" onClick={() => setShowProjectForm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.25rem' }}><X size={20}/></button>
+                    </div>
+                    <form onSubmit={handleAddProject} className="premium-form" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
+                      <div className="premium-form-grid" style={{ gridTemplateColumns: '1fr', gap: '0.75rem' }}>
                         <div className="form-group">
-                          <label>Share Percentage (%)</label>
-                          <input type="number" step="0.01" required value={newProject.revenue_share_percentage} onChange={e => setNewProject({...newProject, revenue_share_percentage: e.target.value})} placeholder="e.g. 20" />
+                          <label>Project Name</label>
+                          <input type="text" required value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder="e.g. Website Redesign" />
                         </div>
-                      )}
-                    </>
-                  )}
-                  {newProject.project_type !== 'REVENUE_SHARE' && (
-                    <>
-                      <div className="form-group">
-                        <label>Base / Total Value (₹)</label>
-                        <input type="number" required value={newProject.total_value} onChange={e => setNewProject({...newProject, total_value: e.target.value})} placeholder="0.00" />
+                        <div className="form-group">
+                          <label>Client</label>
+                          <CustomSelect 
+                            required
+                            value={newProject.client} 
+                            onChange={val => setNewProject({...newProject, client: val})} 
+                            placeholder="Select Client..."
+                            options={clients.map(c => ({ value: c.id, label: c.name }))}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Revenue Model</label>
+                          <CustomSelect 
+                            required
+                            value={newProject.project_type} 
+                            onChange={val => setNewProject({...newProject, project_type: val})} 
+                            options={[
+                              { value: 'FIXED', label: 'Fixed Price' },
+                              { value: 'HOURLY', label: 'Hourly' },
+                              { value: 'AMC', label: 'AMC' },
+                              { value: 'REVENUE_SHARE', label: 'Revenue Share' }
+                            ]}
+                          />
+                        </div>
+
+                        {newProject.project_type === 'REVENUE_SHARE' && (
+                          <>
+                            <div className="form-group">
+                              <label>Revenue Share Type</label>
+                              <CustomSelect 
+                                required
+                                value={newProject.revenue_share_type} 
+                                onChange={val => setNewProject({...newProject, revenue_share_type: val})} 
+                                options={[
+                                  { value: 'PROFIT_SHARE', label: 'Monthly Profit Share' },
+                                  { value: 'PER_SEAT', label: 'Per Seat / Admission Share' }
+                                ]}
+                              />
+                            </div>
+                            {newProject.revenue_share_type === 'PROFIT_SHARE' && (
+                              <div className="form-group">
+                                <label>Share Percentage (%)</label>
+                                <input type="number" step="0.01" required value={newProject.revenue_share_percentage} onChange={e => setNewProject({...newProject, revenue_share_percentage: e.target.value})} placeholder="e.g. 20" />
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {newProject.project_type !== 'REVENUE_SHARE' && (
+                          <>
+                            <div className="form-group">
+                              <label>Base / Total Value (₹)</label>
+                              <input type="number" required value={newProject.total_value} onChange={e => setNewProject({...newProject, total_value: e.target.value})} placeholder="0.00" />
+                            </div>
+                            <div className="form-group">
+                              <label>AMC % (if applicable)</label>
+                              <input type="number" step="0.01" value={newProject.amc_percentage} onChange={e => setNewProject({...newProject, amc_percentage: e.target.value})} placeholder="e.g. 15" />
+                            </div>
+                            <div className="form-group">
+                              <label>Delivery Date (Optional)</label>
+                              <input type="date" value={newProject.delivery_date} onChange={e => setNewProject({...newProject, delivery_date: e.target.value})} />
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <div className="form-group">
-                        <label>AMC % (if applicable)</label>
-                        <input type="number" step="0.01" value={newProject.amc_percentage} onChange={e => setNewProject({...newProject, amc_percentage: e.target.value})} placeholder="e.g. 15" />
+                      <div className="premium-form-actions" style={{ marginTop: '1.25rem' }}>
+                        <button type="button" className="btn" onClick={() => setShowProjectForm(false)}>Cancel</button>
+                        <button type="submit" className="btn btn-primary">{editingProject ? 'Update Project' : 'Save Project'}</button>
                       </div>
-                      <div className="form-group">
-                        <label>Delivery Date (Optional)</label>
-                        <input type="date" value={newProject.delivery_date} onChange={e => setNewProject({...newProject, delivery_date: e.target.value})} />
-                      </div>
-                    </>
-                  )}
+                    </form>
+                  </div>
                 </div>
-                <div className="premium-form-actions">
-                  <button type="button" className="btn" onClick={() => setShowProjectForm(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">{editingProject ? 'Update Project' : 'Save Project'}</button>
-                </div>
-              </form>
+              ) : (
+                <form onSubmit={handleAddProject} className="premium-form">
+                  <div className="premium-form-header">
+                    <h3 className="premium-form-title">{editingProject ? 'Edit Project' : 'Add New Project'}</h3>
+                  </div>
+                  <div className="premium-form-grid">
+                    <div className="form-group">
+                      <label>Project Name</label>
+                      <input type="text" required value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder="e.g. Website Redesign" />
+                    </div>
+                    <div className="form-group">
+                      <label>Client</label>
+                      <CustomSelect 
+                        required
+                        value={newProject.client} 
+                        onChange={val => setNewProject({...newProject, client: val})} 
+                        placeholder="Select Client..."
+                        options={clients.map(c => ({ value: c.id, label: c.name }))}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Revenue Model</label>
+                      <CustomSelect 
+                        required
+                        value={newProject.project_type} 
+                        onChange={val => setNewProject({...newProject, project_type: val})} 
+                        options={[
+                          { value: 'FIXED', label: 'Fixed Price' },
+                          { value: 'HOURLY', label: 'Hourly' },
+                          { value: 'AMC', label: 'AMC' },
+                          { value: 'REVENUE_SHARE', label: 'Revenue Share' }
+                        ]}
+                      />
+                    </div>
+
+                    {newProject.project_type === 'REVENUE_SHARE' && (
+                      <>
+                        <div className="form-group">
+                          <label>Revenue Share Type</label>
+                          <CustomSelect 
+                            required
+                            value={newProject.revenue_share_type} 
+                            onChange={val => setNewProject({...newProject, revenue_share_type: val})} 
+                            options={[
+                              { value: 'PROFIT_SHARE', label: 'Monthly Profit Share' },
+                              { value: 'PER_SEAT', label: 'Per Seat / Admission Share' }
+                            ]}
+                          />
+                        </div>
+                        {newProject.revenue_share_type === 'PROFIT_SHARE' && (
+                          <div className="form-group">
+                            <label>Share Percentage (%)</label>
+                            <input type="number" step="0.01" required value={newProject.revenue_share_percentage} onChange={e => setNewProject({...newProject, revenue_share_percentage: e.target.value})} placeholder="e.g. 20" />
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {newProject.project_type !== 'REVENUE_SHARE' && (
+                      <>
+                        <div className="form-group">
+                          <label>Base / Total Value (₹)</label>
+                          <input type="number" required value={newProject.total_value} onChange={e => setNewProject({...newProject, total_value: e.target.value})} placeholder="0.00" />
+                        </div>
+                        <div className="form-group">
+                          <label>AMC % (if applicable)</label>
+                          <input type="number" step="0.01" value={newProject.amc_percentage} onChange={e => setNewProject({...newProject, amc_percentage: e.target.value})} placeholder="e.g. 15" />
+                        </div>
+                        <div className="form-group">
+                          <label>Delivery Date (Optional)</label>
+                          <input type="date" value={newProject.delivery_date} onChange={e => setNewProject({...newProject, delivery_date: e.target.value})} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="premium-form-actions">
+                    <button type="button" className="btn" onClick={() => setShowProjectForm(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">{editingProject ? 'Update Project' : 'Save Project'}</button>
+                  </div>
+                </form>
+              )
             )}
 
             <div className="table-container">
-              <table className="responsive-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th>Project Name</th>
-                    <th>Client</th>
-                    <th>Value / Type</th>
-
-                    <th>Created</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              {isMobile ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   {projectsPagination.currentData.map(p => (
-                    <tr key={p.id}>
-                      <td className="strong" data-label="Project Name">{p.name}</td>
-                      <td data-label="Client">{p.client_name}</td>
-                      <td className="strong" style={{ color: p.project_type === 'REVENUE_SHARE' ? 'var(--info)' : 'var(--success)' }} data-label="Value / Type">
-                        {p.project_type === 'REVENUE_SHARE' ? 'Revenue Share' : formatCurrency(p.total_value)}
-                      </td>
-
-                      <td data-label="Created">{new Date(p.created_at).toLocaleDateString()}</td>
-                      <td data-label="Actions">
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-                          <Link to={`/projects/${p.id}`} className="btn" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', background: 'var(--primary-color)', color: '#fff', borderRadius: '4px', textDecoration: 'none' }}>
-                            Manage Details
+                    <div key={p.id} className="card" style={{ padding: '0.75rem', marginBottom: 0, borderRadius: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>{p.name}</strong>
+                        <span className="badge" style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '0.15rem 0.45rem',
+                          background: p.project_type === 'REVENUE_SHARE' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                          color: p.project_type === 'REVENUE_SHARE' ? '#38bdf8' : '#4ade80'
+                        }}>
+                          {p.project_type}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.45rem' }}>
+                        {p.client_name || 'No Client'} • {new Date(p.created_at).toLocaleDateString()}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.4rem' }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: p.project_type === 'REVENUE_SHARE' ? 'var(--info)' : 'var(--success)' }}>
+                          {p.project_type === 'REVENUE_SHARE' ? 'Rev Share' : formatCurrency(p.total_value)}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                          <Link to={`/projects/${p.id}`} className="btn" style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem', background: 'var(--primary-color)', color: '#fff', borderRadius: '6px', textDecoration: 'none' }}>
+                            Details
                           </Link>
                           {user?.role === 'ACCOUNTANT' && (
                             <>
-                              <button className="btn" onClick={() => handleEditProject(p)} style={{ padding: '0.4rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '4px' }} title="Edit"><Edit2 size={16}/></button>
-                              <button className="btn" onClick={() => handleDeleteProject(p.id)} style={{ padding: '0.4rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px' }} title="Delete"><Trash2 size={16}/></button>
+                              <button className="btn" onClick={() => handleEditProject(p)} style={{ padding: '0.35rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px' }} title="Edit"><Edit2 size={14}/></button>
+                              <button className="btn" onClick={() => handleDeleteProject(p.id)} style={{ padding: '0.35rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px' }} title="Delete"><Trash2 size={14}/></button>
                             </>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                  {projectsPagination.currentData.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No projects found.</td></tr>}
-                </tbody>
-              </table>
+                  {projectsPagination.currentData.length === 0 && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No projects found.</div>}
+                </div>
+              ) : (
+                <table className="responsive-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>Project Name</th>
+                      <th>Client</th>
+                      <th>Value / Type</th>
+                      <th>Created</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projectsPagination.currentData.map(p => (
+                      <tr key={p.id}>
+                        <td className="strong" data-label="Project Name">{p.name}</td>
+                        <td data-label="Client">{p.client_name}</td>
+                        <td className="strong" style={{ color: p.project_type === 'REVENUE_SHARE' ? 'var(--info)' : 'var(--success)' }} data-label="Value / Type">
+                          {p.project_type === 'REVENUE_SHARE' ? 'Revenue Share' : formatCurrency(p.total_value)}
+                        </td>
+                        <td data-label="Created">{new Date(p.created_at).toLocaleDateString()}</td>
+                        <td data-label="Actions">
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+                            <Link to={`/projects/${p.id}`} className="btn" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', background: 'var(--primary-color)', color: '#fff', borderRadius: '4px', textDecoration: 'none' }}>
+                              Manage Details
+                            </Link>
+                            {user?.role === 'ACCOUNTANT' && (
+                              <>
+                                <button className="btn" onClick={() => handleEditProject(p)} style={{ padding: '0.4rem', color: 'var(--primary-color)', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '4px' }} title="Edit"><Edit2 size={16}/></button>
+                                <button className="btn" onClick={() => handleDeleteProject(p.id)} style={{ padding: '0.4rem', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px' }} title="Delete"><Trash2 size={16}/></button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {projectsPagination.currentData.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No projects found.</td></tr>}
+                  </tbody>
+                </table>
+              )}
               <Pagination {...projectsPagination} />
             </div>
           </div>
