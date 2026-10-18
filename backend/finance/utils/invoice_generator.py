@@ -140,14 +140,18 @@ def generate_invoice_pdf(invoice):
     invoice_no = f"INV-{str(invoice.id).zfill(3)}"
     date_str = invoice.date.strftime('%d %B %Y')
     
-    primary_name = client_company if client_company else client_name
-    
-    client_info_html = f"<font color='#555555' size='8'>Invoice to :</font><br/>"
-    client_info_html += f"<font size='12'><b>{primary_name}</b></font><br/>"
+    client_info_html = "<font color='#555555' size='8'>Invoice to :</font><br/>"
+    if client_company:
+        client_info_html += f"<font size='12' color='#111827'><b>{client_company}</b></font><br/>"
+        if client_name and client_name != "N/A" and client_name.strip().lower() != client_company.strip().lower():
+            client_info_html += f"<font size='9' color='#555555'>Attn: <b>{client_name}</b></font><br/>"
+    else:
+        client_info_html += f"<font size='12' color='#111827'><b>{client_name}</b></font><br/>"
+        
     if client_phone:
         client_info_html += f"<font color='#777777'>{client_phone}</font><br/>"
     if client_address:
-        addr_lines = client_address.split('\n')
+        addr_lines = [line.strip() for line in client_address.split('\n') if line.strip()]
         client_info_html += f"<font color='#777777'>{'<br/>'.join(addr_lines)}</font>"
         
     invoice_meta_html = f"<font size='9'><b>Invoice no : {invoice_no}</b></font><br/>"
@@ -191,8 +195,8 @@ def generate_invoice_pdf(invoice):
         "1", 
         Paragraph(desc_text.replace('\n', '<br/>'), normal), 
         "1", 
-        f"₹{invoice.amount:,.0f}", 
-        f"₹{invoice.amount:,.0f}"
+        f"Rs. {invoice.amount:,.0f}", 
+        f"Rs. {invoice.amount:,.0f}"
     ])
     
     items_table = Table(table_data, colWidths=col_widths)
@@ -301,13 +305,13 @@ def generate_invoice_pdf(invoice):
         left_html += "<font size='8' color='#3866df'><b>Payment Overview:</b></font><br/>"
         left_html += f"<font size='7' color='#555555'>"
         if payment_type == 'ADVANCE':
-            left_html += f"• Advance Payment: ₹{invoice.amount:,.0f} (Dated {invoice.date.strftime('%d %b %Y')})<br/>"
-            left_html += f"• Remaining Project Balance: ₹{balance_due:,.0f}<br/>"
+            left_html += f"- Advance Payment: Rs. {invoice.amount:,.0f} (Dated {invoice.date.strftime('%d %b %Y')})<br/>"
+            left_html += f"- Remaining Project Balance: Rs. {balance_due:,.0f}<br/>"
         elif payment_type == 'PARTIAL':
             if adv_amount:
-                left_html += f"• Advance Received: ₹{adv_amount:,.0f} ({adv_date_str})<br/>"
-            left_html += f"• Current Partial Payment: ₹{invoice.amount:,.0f} ({invoice.date.strftime('%d %b %Y')})<br/>"
-            left_html += f"• Remaining Balance Due: ₹{balance_due:,.0f}<br/>"
+                left_html += f"- Advance Received: Rs. {adv_amount:,.0f} ({adv_date_str})<br/>"
+            left_html += f"- Current Partial Payment: Rs. {invoice.amount:,.0f} ({invoice.date.strftime('%d %b %Y')})<br/>"
+            left_html += f"- Remaining Balance Due: Rs. {balance_due:,.0f}<br/>"
         left_html += "</font><br/>"
 
     left_html += "<font size='8' color='#333333'><b>Bank Details:</b><br/>"
@@ -329,36 +333,36 @@ def generate_invoice_pdf(invoice):
     totals_data = []
     
     if total_project_val > Decimal('0.00'):
-        totals_data.append(['Project Total Value', f"₹{total_project_val:,.0f}"])
+        totals_data.append(['Project Total Value', f"Rs. {total_project_val:,.0f}"])
         
     if payment_type == 'ADVANCE':
-        totals_data.append(['Advance Payment Due', f"₹{invoice.amount:,.0f}"])
-        totals_data.append(['INVOICE TOTAL :', f"₹{invoice.amount:,.0f}"])
-        totals_data.append(['Remaining Balance', f"₹{balance_due:,.0f}"])
+        totals_data.append(['Advance Payment Due', f"Rs. {invoice.amount:,.0f}"])
+        totals_data.append(['INVOICE TOTAL :', f"Rs. {invoice.amount:,.0f}"])
+        totals_data.append(['Remaining Balance', f"Rs. {balance_due:,.0f}"])
     elif payment_type == 'PARTIAL':
         if adv_amount:
-            totals_data.append([f"Advance Paid ({adv_date_str})", f"(-) ₹{adv_amount:,.0f}"])
+            totals_data.append([f"Advance Paid ({adv_date_str})", f"(-) Rs. {adv_amount:,.0f}"])
         if prior_partial_total > Decimal('0.00'):
-            totals_data.append(['Previous Payments', f"(-) ₹{prior_partial_total:,.0f}"])
-        totals_data.append(['THIS INVOICE (Partial) :', f"₹{invoice.amount:,.0f}"])
+            totals_data.append(['Previous Payments', f"(-) Rs. {prior_partial_total:,.0f}"])
+        totals_data.append(['THIS INVOICE (Partial) :', f"Rs. {invoice.amount:,.0f}"])
         if total_project_val > Decimal('0.00'):
             total_paid_all = (adv_amount or Decimal('0.00')) + prior_partial_total + invoice.amount
-            totals_data.append(['Total Paid to Date', f"₹{total_paid_all:,.0f}"])
-            totals_data.append(['BALANCE DUE :', f"₹{balance_due:,.0f}"])
+            totals_data.append(['Total Paid to Date', f"Rs. {total_paid_all:,.0f}"])
+            totals_data.append(['BALANCE DUE :', f"Rs. {balance_due:,.0f}"])
     elif payment_type == 'FULL':
         if adv_amount:
-            totals_data.append([f"Advance Paid ({adv_date_str})", f"(-) ₹{adv_amount:,.0f}"])
+            totals_data.append([f"Advance Paid ({adv_date_str})", f"(-) Rs. {adv_amount:,.0f}"])
         if prior_partial_total > Decimal('0.00'):
-            totals_data.append(['Previous Payments', f"(-) ₹{prior_partial_total:,.0f}"])
-        totals_data.append(['FINAL PAYMENT :', f"₹{invoice.amount:,.0f}"])
-        totals_data.append(['BALANCE DUE :', '₹0 (Settled)'])
+            totals_data.append(['Previous Payments', f"(-) Rs. {prior_partial_total:,.0f}"])
+        totals_data.append(['FINAL PAYMENT :', f"Rs. {invoice.amount:,.0f}"])
+        totals_data.append(['BALANCE DUE :', 'Rs. 0 (Settled)'])
     else:  # RENEWAL / Other
-        totals_data.append(['Amount', f"₹{invoice.amount:,.0f}"])
-        totals_data.append(['GRAND TOTAL :', f"₹{invoice.amount:,.0f}"])
+        totals_data.append(['Amount', f"Rs. {invoice.amount:,.0f}"])
+        totals_data.append(['GRAND TOTAL :', f"Rs. {invoice.amount:,.0f}"])
 
     discount = getattr(invoice, 'discount', 0)
     if discount > 0:
-        totals_data.insert(1, ['Discount', f"(-) ₹{discount:,.0f}"])
+        totals_data.insert(1, ['Discount', f"(-) Rs. {discount:,.0f}"])
         
     totals_subtable = Table(totals_data, colWidths=[150, 105])
     
@@ -455,12 +459,12 @@ def generate_invoice_pdf(invoice):
     if invoice.pdf_file:
         invoice.pdf_file.delete(save=False)
         
-    client = invoice.project.client
-    client_name = client.company_name or client.name
-    # Clean the client name to be safe for a filename
-    safe_client_name = re.sub(r'[^a-zA-Z0-9]', '', client_name)
+    client = invoice.project.client if invoice.project else None
+    company_or_client = (client.company_name or client.name) if client else 'Client'
+    # Clean the client/company name to be safe for a filename
+    safe_client_name = re.sub(r'[^a-zA-Z0-9_\- ]', '', company_or_client).strip().replace(' ', '_')
     date_str = invoice.date.strftime('%Y-%m-%d')
-    invoice_number = f"INV-{str(invoice.id).zfill(4)}"
+    invoice_number = f"INV-{str(invoice.id).zfill(3)}"
     
     file_name = f"{invoice_number}_{safe_client_name}_{date_str}.pdf"
     invoice.pdf_file.save(file_name, ContentFile(pdf), save=True)

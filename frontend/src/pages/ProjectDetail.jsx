@@ -341,7 +341,12 @@ const ProjectDetail = () => {
   const handleDownloadPDF = async (inv, isShare = false) => {
     try {
       setDownloadingInvId(inv.id);
-      await downloadInvoicePdf(inv.id, { client_name: project?.client_name, project_name: project?.name }, { share: isShare });
+      await downloadInvoicePdf(inv.id, { 
+        client_name: project?.client_name, 
+        company_name: project?.company_name,
+        invoice_no: inv.invoice_number || `INV-${inv.id.toString().padStart(3, '0')}`,
+        project_name: project?.name 
+      }, { share: isShare });
       if (!isShare) toast.success("Invoice PDF downloaded successfully!");
     } catch (error) {
       console.error('Error downloading PDF', error);
@@ -869,7 +874,7 @@ const ProjectDetail = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-color)' }}>
-                        INV-{inv.id.toString().padStart(4, '0')}
+                        {inv.invoice_number || `INV-${inv.id.toString().padStart(3, '0')}`}
                       </span>
                       <span className={`badge ${inv.status === 'PAID' ? 'badge-success' : inv.status === 'SENT' ? 'badge-info' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
                         {inv.status}
@@ -929,7 +934,7 @@ const ProjectDetail = () => {
                   {invoicesPagination.currentData.map(inv => (
                     <tr key={inv.id}>
                       <td data-label="Date">{inv.date}</td>
-                      <td className="strong" data-label="Invoice #">INV-{inv.id.toString().padStart(4, '0')}</td>
+                      <td className="strong" data-label="Invoice #">{inv.invoice_number || `INV-${inv.id.toString().padStart(3, '0')}`}</td>
                       <td data-label="Type">
                         <span className="badge" style={{ 
                           background: inv.payment_type === 'ADVANCE' ? 'rgba(99, 102, 241, 0.15)' : 

@@ -307,16 +307,34 @@ const Expenses = () => {
             className="btn btn-primary"
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={() => {
-              if (showExpenseForm) {
-                setShowExpenseForm(false);
-                setEditingExpense(null);
-                setNewExpense({ expense_type: 'DIRECT', payee_description: '', category: 'OTHER', project: '', amount: '', date: new Date().toISOString().split('T')[0], withdrawal_account: '', receipt_file: null });
+              if (activeTab === 'register') {
+                if (showExpenseForm && !isMobile) {
+                  setShowExpenseForm(false);
+                  setEditingExpense(null);
+                  setNewExpense({ expense_type: 'DIRECT', payee_description: '', category: 'OTHER', project: '', amount: '', date: new Date().toISOString().split('T')[0], withdrawal_account: '', receipt_file: null });
+                } else {
+                  setShowExpenseForm(true);
+                }
               } else {
-                setShowExpenseForm(true);
+                if (showAdvanceForm && !isMobile) {
+                  setShowAdvanceForm(false);
+                  setEditingAdvance(null);
+                  setNewAdvance({ amount: '', purpose: '' });
+                } else {
+                  setShowAdvanceForm(true);
+                }
               }
             }}
           >
-            {showExpenseForm ? <X size={18} /> : <><Plus size={18} /> {editingExpense ? 'Edit Expense' : 'Log Expense'}</>}
+            {isMobile ? (
+              <><Plus size={18} /> {activeTab === 'register' ? (editingExpense ? 'Edit Expense' : 'Log Expense') : (editingAdvance ? 'Edit Request' : 'Request Advance')}</>
+            ) : (
+              activeTab === 'register' ? (
+                showExpenseForm ? <><X size={18} /> Close</> : <><Plus size={18} /> {editingExpense ? 'Edit Expense' : 'Log Expense'}</>
+              ) : (
+                showAdvanceForm ? <><X size={18} /> Close</> : <><Plus size={18} /> {editingAdvance ? 'Edit Request' : 'Request Funds'}</>
+              )
+            )}
           </button>
         </div>
       </div>
@@ -376,108 +394,8 @@ const Expenses = () => {
             </div>
           </div>
 
-          {showExpenseForm && (
-            isMobile ? (
-              <div className="modal-overlay" onClick={() => setShowExpenseForm(false)}>
-                <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '92%', maxHeight: '90vh', overflowY: 'auto', padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.75rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{editingExpense ? 'Edit Expense' : 'Log New Expense'}</h3>
-                    <button className="btn" onClick={() => setShowExpenseForm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.25rem' }}><X size={20}/></button>
-                  </div>
-                  <form onSubmit={handleLogExpense} className="premium-form" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
-                    <div className="premium-form-grid" style={{ gridTemplateColumns: '1fr', gap: '0.75rem' }}>
-                      <div className="form-group">
-                        <label>Expense Type</label>
-                        <CustomSelect 
-                          value={newExpense.expense_type} 
-                          onChange={val => setNewExpense({ ...newExpense, expense_type: val })} 
-                          options={[
-                            { value: 'DIRECT', label: 'Direct (Paid from Company Bank)' },
-                            { value: 'FROM_WALLET', label: 'Indirect (Paid from My Wallet)' }
-                          ]}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Payee / Description</label>
-                        <input type="text" required value={newExpense.payee_description} onChange={e => setNewExpense({ ...newExpense, payee_description: e.target.value })} placeholder="e.g. AWS Hosting" />
-                      </div>
-                      <div className="form-group">
-                        <label>Category</label>
-                        <CustomSelect 
-                          value={newExpense.category} 
-                          onChange={val => setNewExpense({ ...newExpense, category: val })} 
-                          options={[
-                            { value: 'TRAVEL', label: 'Travel' },
-                            { value: 'SERVERS', label: 'Servers / Hosting' },
-                            { value: 'SOFTWARE', label: 'Software Licenses' },
-                            { value: 'MARKETING', label: 'Marketing' },
-                            { value: 'OFFICE', label: 'Office Supplies' },
-                            { value: 'OTHER', label: 'Other' }
-                          ]}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Project (Optional)</label>
-                        <CustomSelect 
-                          value={newExpense.project} 
-                          onChange={val => setNewExpense({ ...newExpense, project: val })} 
-                          options={[
-                            { value: '', label: '-- None --' },
-                            ...projects.map(p => ({ value: p.id, label: p.name }))
-                          ]}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Amount (₹)</label>
-                        <input type="number" step="0.01" required value={newExpense.amount} onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })} placeholder="0.00" />
-                      </div>
-                      <div className="form-group">
-                        <label>Date</label>
-                        <input type="date" required value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })} max={new Date().toISOString().split('T')[0]} />
-                      </div>
-                      {newExpense.expense_type === 'DIRECT' && (
-                        <div className="form-group">
-                          <label>Paid From Bank Account</label>
-                          <CustomSelect 
-                            required
-                            value={newExpense.withdrawal_account} 
-                            onChange={val => setNewExpense({ ...newExpense, withdrawal_account: val })} 
-                            placeholder="Select Account..."
-                            options={bankAccounts.map(b => ({ value: b.id, label: `${b.name} (Balance: ${formatCurrency(b.current_balance)})` }))}
-                          />
-                        </div>
-                      )}
-                      <div className="form-group">
-                        <label>Invoice / Receipt <span style={{color:'var(--danger)'}}>*</span></label>
-                        <input type="file" onChange={e => setNewExpense({ ...newExpense, receipt_file: e.target.files[0] })} />
-                        {newExpense.receipt_file && typeof newExpense.receipt_file === 'string' && (
-                          <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '0.25rem' }}>Current bill uploaded</div>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
-                          <input 
-                            type="checkbox" 
-                            id="bill_not_required" 
-                            checked={newExpense.bill_not_required || false}
-                            onChange={e => setNewExpense({ ...newExpense, bill_not_required: e.target.checked })}
-                          />
-                          <label htmlFor="bill_not_required" style={{ margin: 0, fontWeight: 'normal', cursor: 'pointer', fontSize: '0.85rem' }}>
-                            No bill required (Small payment like tea/snacks)
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="premium-form-actions" style={{ marginTop: '1.25rem' }}>
-                      <button type="button" className="btn" onClick={() => setShowExpenseForm(false)} disabled={isSubmitting}>Cancel</button>
-                      <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                        {isSubmitting ? 'Saving...' : 'Submit Expense'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleLogExpense} className="premium-form">
+          {showExpenseForm && !isMobile && (
+            <form onSubmit={handleLogExpense} className="premium-form">
                 <div className="premium-form-header">
                   <h3 className="premium-form-title">Log New Expense</h3>
                 </div>
@@ -571,7 +489,6 @@ const Expenses = () => {
                   </button>
                 </div>
               </form>
-            )
           )}
 
           <div className="table-container">
@@ -638,32 +555,8 @@ const Expenses = () => {
             </button>
           </div>
 
-          {showAdvanceForm && (
-            isMobile ? (
-              <div className="modal-overlay" onClick={() => setShowAdvanceForm(false)}>
-                <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '92%', padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.75rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{editingAdvance ? 'Edit Request' : 'Request Advance Funds'}</h3>
-                    <button className="btn" onClick={() => setShowAdvanceForm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.25rem' }}><X size={20}/></button>
-                  </div>
-                  <form onSubmit={handleRequestAdvance} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Amount Requested (₹)</label>
-                      <input type="number" required value={newAdvance.amount} onChange={e => setNewAdvance({ ...newAdvance, amount: e.target.value })} placeholder="0.00" />
-                    </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Purpose</label>
-                      <input type="text" required value={newAdvance.purpose} onChange={e => setNewAdvance({ ...newAdvance, purpose: e.target.value })} placeholder="e.g. Travel to client site" />
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn" onClick={() => setShowAdvanceForm(false)}>Cancel</button>
-                      <button type="submit" className="btn btn-primary">Submit Request</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleRequestAdvance} style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          {showAdvanceForm && !isMobile && (
+            <form onSubmit={handleRequestAdvance} style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <div className="form-group" style={{ flex: '1 1 200px', marginBottom: 0 }}>
                   <label>Amount Requested (₹)</label>
                   <input type="number" required value={newAdvance.amount} onChange={e => setNewAdvance({ ...newAdvance, amount: e.target.value })} placeholder="0.00" />
@@ -674,7 +567,6 @@ const Expenses = () => {
                 </div>
                 <button type="submit" className="btn btn-primary">Submit Request</button>
               </form>
-            )
           )}
 
           <div className="table-container">
@@ -732,6 +624,134 @@ const Expenses = () => {
                 {(user?.role === 'ACCOUNTANT' ? advanceRequests : advanceRequests.filter(r => r.requested_by === user?.id)).length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No advance requests found.</td></tr>}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Root-Level Mobile Modal for Expense Form */}
+      {showExpenseForm && isMobile && (
+        <div className="modal-overlay" onClick={() => setShowExpenseForm(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{editingExpense ? 'Edit Expense' : 'Log New Expense'}</h3>
+              <button className="btn" type="button" onClick={() => setShowExpenseForm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.25rem' }}><X size={20}/></button>
+            </div>
+            <form onSubmit={handleLogExpense} className="premium-form" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
+              <div className="premium-form-grid" style={{ gridTemplateColumns: '1fr', gap: '0.75rem' }}>
+                <div className="form-group">
+                  <label>Expense Type</label>
+                  <CustomSelect 
+                    value={newExpense.expense_type} 
+                    onChange={val => setNewExpense({ ...newExpense, expense_type: val })} 
+                    options={[
+                      { value: 'DIRECT', label: 'Direct (Paid from Company Bank)' },
+                      { value: 'FROM_WALLET', label: 'Indirect (Paid from My Wallet)' }
+                    ]}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Payee / Description</label>
+                  <input type="text" required value={newExpense.payee_description} onChange={e => setNewExpense({ ...newExpense, payee_description: e.target.value })} placeholder="e.g. AWS Hosting" />
+                </div>
+                <div className="form-group">
+                  <label>Category</label>
+                  <CustomSelect 
+                    value={newExpense.category} 
+                    onChange={val => setNewExpense({ ...newExpense, category: val })} 
+                    options={[
+                      { value: 'TRAVEL', label: 'Travel' },
+                      { value: 'SERVERS', label: 'Servers / Hosting' },
+                      { value: 'SOFTWARE', label: 'Software Licenses' },
+                      { value: 'MARKETING', label: 'Marketing' },
+                      { value: 'OFFICE', label: 'Office Supplies' },
+                      { value: 'OTHER', label: 'Other' }
+                    ]}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Project (Optional)</label>
+                  <CustomSelect 
+                    value={newExpense.project} 
+                    onChange={val => setNewExpense({ ...newExpense, project: val })} 
+                    options={[
+                      { value: '', label: '-- None --' },
+                      ...projects.map(p => ({ value: p.id, label: p.name }))
+                    ]}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Amount (₹)</label>
+                  <input type="number" step="0.01" required value={newExpense.amount} onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })} placeholder="0.00" />
+                </div>
+                <div className="form-group">
+                  <label>Date</label>
+                  <input type="date" required value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })} max={new Date().toISOString().split('T')[0]} />
+                </div>
+                {newExpense.expense_type === 'DIRECT' && (
+                  <div className="form-group">
+                    <label>Paid From Bank Account</label>
+                    <CustomSelect 
+                      required
+                      value={newExpense.withdrawal_account} 
+                      onChange={val => setNewExpense({ ...newExpense, withdrawal_account: val })} 
+                      placeholder="Select Account..."
+                      options={bankAccounts.map(b => ({ value: b.id, label: `${b.name} (Balance: ${formatCurrency(b.current_balance)})` }))}
+                    />
+                  </div>
+                )}
+                <div className="form-group">
+                  <label>Invoice / Receipt <span style={{color:'var(--danger)'}}>*</span></label>
+                  <input type="file" onChange={e => setNewExpense({ ...newExpense, receipt_file: e.target.files[0] })} />
+                  {newExpense.receipt_file && typeof newExpense.receipt_file === 'string' && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '0.25rem' }}>Current bill uploaded</div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    <input 
+                      type="checkbox" 
+                      id="bill_not_required_mobile" 
+                      checked={newExpense.bill_not_required || false}
+                      onChange={e => setNewExpense({ ...newExpense, bill_not_required: e.target.checked })}
+                    />
+                    <label htmlFor="bill_not_required_mobile" style={{ margin: 0, fontWeight: 'normal', cursor: 'pointer', fontSize: '0.85rem' }}>
+                      No bill required (Small payment like tea/snacks)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="premium-form-actions" style={{ marginTop: '1.25rem' }}>
+                <button type="button" className="btn" onClick={() => setShowExpenseForm(false)} disabled={isSubmitting}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Submit Expense'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Root-Level Mobile Modal for Advance Form */}
+      {showAdvanceForm && isMobile && (
+        <div className="modal-overlay" onClick={() => setShowAdvanceForm(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{editingAdvance ? 'Edit Request' : 'Request Advance Funds'}</h3>
+              <button className="btn" type="button" onClick={() => setShowAdvanceForm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.25rem' }}><X size={20}/></button>
+            </div>
+            <form onSubmit={handleRequestAdvance} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Amount Requested (₹)</label>
+                <input type="number" required value={newAdvance.amount} onChange={e => setNewAdvance({ ...newAdvance, amount: e.target.value })} placeholder="0.00" />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Purpose</label>
+                <input type="text" required value={newAdvance.purpose} onChange={e => setNewAdvance({ ...newAdvance, purpose: e.target.value })} placeholder="e.g. Travel to client site" />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn" onClick={() => setShowAdvanceForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Submit Request</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

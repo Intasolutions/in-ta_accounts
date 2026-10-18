@@ -15,9 +15,10 @@ export const downloadInvoicePdf = async (invoiceId, meta = {}, { share = false }
     });
 
     const blob = new Blob([response.data], { type: 'application/pdf' });
-    const formattedId = String(invoiceId).padStart(4, '0');
-    const safeClient = meta.client_name ? meta.client_name.replace(/[^a-zA-Z0-9]/g, '_') : 'Invoice';
-    const filename = `INV_${formattedId}_${safeClient}.pdf`;
+    const formattedId = meta.invoice_no || `INV-${String(invoiceId).padStart(3, '0')}`;
+    const companyOrClient = meta.company_name || meta.client_name || meta.project_name || 'Invoice';
+    const safeClient = companyOrClient.replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_');
+    const filename = `${formattedId}_${safeClient}.pdf`;
 
     // 1. Mobile Native Share Sheet (WhatsApp, Save to Files, AirDrop, etc.)
     if (share && typeof navigator !== 'undefined' && navigator.canShare) {
@@ -26,8 +27,8 @@ export const downloadInvoicePdf = async (invoiceId, meta = {}, { share = false }
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
-            title: `Invoice INV-${formattedId}`,
-            text: `Invoice INV-${formattedId} for ${meta.client_name || meta.project_name || 'Client'}`
+            title: `Invoice ${formattedId}`,
+            text: `Invoice ${formattedId} for ${meta.company_name || meta.client_name || meta.project_name || 'Client'}`
           });
           return { success: true, method: 'share' };
         }

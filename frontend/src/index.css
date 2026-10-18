@@ -526,6 +526,140 @@ tbody tr:last-child td {
     transform: scale(1.1);
     stroke: var(--primary-color);
   }
+
+  /* Header mobile brand */
+  .mobile-header-brand {
+    display: flex !important;
+  }
+  .mobile-toggle {
+    display: none !important;
+  }
+
+  /* Prevent backdrop-filter on cards on mobile from trapping position:fixed modals */
+  .card, .glass-panel {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Mobile bottom sheet modal positioning */
+  .modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 1.5rem 1.5rem 0 0 !important;
+    margin: 0 !important;
+    padding: 1.25rem 1.25rem 2.5rem 1.25rem !important;
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-bottom: none !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6) !important;
+    animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+}
+
+/* Mobile More Menu Sheet */
+.mobile-more-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1050;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.mobile-more-sheet {
+  width: 100%;
+  max-width: 100%;
+  max-height: 82vh;
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem 1.5rem 0 0;
+  padding: 1.25rem 1.25rem 5rem 1.25rem;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
+  animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-more-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-more-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+}
+
+.mobile-more-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.mobile-more-link.active,
+.mobile-more-link:active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #fff;
+}
+
+.mobile-more-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Horizontal Filter Chips */

@@ -77,6 +77,9 @@ class CompanyExpenseSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(serializers.ModelSerializer):
     project_name = serializers.CharField(source='project.name', read_only=True)
     client_name = serializers.CharField(source='project.client.name', read_only=True)
+    company_name = serializers.CharField(source='project.client.company_name', read_only=True, allow_null=True)
+    client_company = serializers.CharField(source='project.client.company_name', read_only=True, allow_null=True)
+    invoice_number = serializers.SerializerMethodField()
     total_project_value = serializers.SerializerMethodField()
     calculated_advance_amount = serializers.SerializerMethodField()
     calculated_advance_date = serializers.SerializerMethodField()
@@ -85,6 +88,9 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = '__all__'
+
+    def get_invoice_number(self, obj):
+        return f"INV-{str(obj.id).zfill(3)}"
 
     def get_total_project_value(self, obj):
         if not obj.project:
@@ -149,6 +155,7 @@ class RevenueShareScopeSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.name', read_only=True)
+    company_name = serializers.CharField(source='client.company_name', read_only=True, allow_null=True)
     enhancements = EnhancementSerializer(many=True, read_only=True)
     renewals = RenewalSerializer(many=True, read_only=True)
     expenses = CompanyExpenseSerializer(many=True, read_only=True)

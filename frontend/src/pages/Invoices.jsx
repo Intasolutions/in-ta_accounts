@@ -146,7 +146,12 @@ const Invoices = () => {
   const handleDownloadPDF = async (inv, isShare = false) => {
     try {
       setDownloadingId(inv.id);
-      await downloadInvoicePdf(inv.id, { client_name: inv.client_name, project_name: inv.project_name }, { share: isShare });
+      await downloadInvoicePdf(inv.id, { 
+        client_name: inv.client_name, 
+        company_name: inv.company_name || inv.client_company,
+        invoice_no: inv.invoice_number || `INV-${inv.id.toString().padStart(3, '0')}`,
+        project_name: inv.project_name 
+      }, { share: isShare });
       if (!isShare) toast.success("Invoice PDF ready!");
     } catch (error) {
       console.error('Error with invoice PDF', error);
@@ -161,9 +166,11 @@ const Invoices = () => {
   };
 
   const filteredInvoices = invoices.filter(inv => 
-    inv.client_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    inv.project_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inv.id.toString().includes(searchQuery)
+    (inv.client_name && inv.client_name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+    (inv.company_name && inv.company_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (inv.project_name && inv.project_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    inv.id.toString().includes(searchQuery) ||
+    (inv.invoice_number && inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const invoicesPagination = usePagination(filteredInvoices, 25);
@@ -342,7 +349,7 @@ const Invoices = () => {
                 <div key={inv.id} className="card" style={{ padding: '0.75rem', marginBottom: 0, borderRadius: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
                     <div>
-                      <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>INV-{inv.id.toString().padStart(4, '0')}</strong>
+                      <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>{inv.invoice_number || `INV-${inv.id.toString().padStart(3, '0')}`}</strong>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>{inv.date}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
@@ -364,7 +371,8 @@ const Invoices = () => {
                   </div>
 
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    <strong style={{ color: 'var(--text-main)' }}>{inv.client_name}</strong> • {inv.project_name}
+                    <strong style={{ color: 'var(--text-main)' }}>{inv.company_name || inv.client_name}</strong>
+                    {inv.company_name && inv.client_name && inv.company_name.toLowerCase() !== inv.client_name.toLowerCase() ? ` (${inv.client_name})` : ''} • {inv.project_name}
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.45rem' }}>
@@ -418,8 +426,13 @@ const Invoices = () => {
                 {invoicesPagination.currentData.map(inv => (
                   <tr key={inv.id}>
                     <td data-label="Date">{inv.date}</td>
-                    <td className="strong" data-label="Invoice #">INV-{inv.id.toString().padStart(4, '0')}</td>
-                    <td data-label="Client">{inv.client_name}</td>
+                    <td className="strong" data-label="Invoice #">{inv.invoice_number || `INV-${inv.id.toString().padStart(3, '0')}`}</td>
+                    <td data-label="Client">
+                      <div style={{ fontWeight: 600 }}>{inv.company_name || inv.client_name}</div>
+                      {inv.company_name && inv.client_name && inv.company_name.toLowerCase() !== inv.client_name.toLowerCase() && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{inv.client_name}</div>
+                      )}
+                    </td>
                     <td data-label="Project">{inv.project_name}</td>
                     <td data-label="Type">
                       <span className="badge" style={{ 

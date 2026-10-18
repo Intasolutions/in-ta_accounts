@@ -218,8 +218,8 @@ def generate_quotation_pdf(quotation):
             str(idx),
             Paragraph(desc_cell_html or "Service Deliverable", normal),
             f"{qty:g}",
-            f"₹{unit_price:,.0f}",
-            f"₹{item_total:,.0f}"
+            f"Rs. {unit_price:,.0f}",
+            f"Rs. {item_total:,.0f}"
         ])
     
     # Check third party
@@ -264,9 +264,9 @@ def generate_quotation_pdf(quotation):
     
     left_html = "<font size='8' color='#3866df'><b>Payment Terms & Conditions:</b></font><br/>"
     left_html += f"<font size='7.5' color='#475569'>"
-    left_html += f"• Advance Required ({adv_pct:g}%): <b>₹{advance_req:,.0f}</b><br/>"
-    left_html += "• Balance payable upon milestone completion / final handover.<br/>"
-    left_html += "• Quotation valid as per the validity date specified above.<br/>"
+    left_html += f"- Advance Required ({adv_pct:g}%): <b>Rs. {advance_req:,.0f}</b><br/>"
+    left_html += "- Balance payable upon milestone completion / final handover.<br/>"
+    left_html += "- Quotation valid as per the validity date specified above.<br/>"
     left_html += "</font><br/>"
 
     left_html += "<font size='8' color='#333333'><b>Bank Account for Remittance:</b><br/>"
@@ -282,17 +282,17 @@ def generate_quotation_pdf(quotation):
     left_html += "<font size='7' color='#777777'><br/><b>TAN Number:</b> AAIC1010K</font></font>"
     
     totals_data = [
-        ['Subtotal', f"₹{subtotal:,.0f}"]
+        ['Subtotal', f"Rs. {subtotal:,.0f}"]
     ]
     
     if include_tp and tp_cost > 0:
         tp_label = raw.get('third_party_desc') or 'Third Party / API Cost'
-        totals_data.append([tp_label, f"₹{tp_cost:,.0f}"])
+        totals_data.append([tp_label, f"Rs. {tp_cost:,.0f}"])
         if tp_gst > 0:
-            totals_data.append([f"GST ({tp_gst:g}%)", f"₹{tp_gst_amt:,.0f}"])
+            totals_data.append([f"GST ({tp_gst:g}%)", f"Rs. {tp_gst_amt:,.0f}"])
             
-    totals_data.append(['GRAND TOTAL :', f"₹{grand_total:,.0f}"])
-    totals_data.append([f"Advance ({adv_pct:g}%) :", f"₹{advance_req:,.0f}"])
+    totals_data.append(['GRAND TOTAL :', f"Rs. {grand_total:,.0f}"])
+    totals_data.append([f"Advance ({adv_pct:g}%) :", f"Rs. {advance_req:,.0f}"])
     
     totals_subtable = Table(totals_data, colWidths=[140, 110])
     

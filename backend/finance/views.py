@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from django.conf import settings
 from pywebpush import webpush, WebPushException
 import json
+import re
 
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
@@ -335,7 +336,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         pdf_bytes = invoice.pdf_file.read()
         
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        filename = f"INV_{str(invoice.id).zfill(4)}_{invoice.date.strftime('%Y%m%d')}.pdf"
+        client = invoice.project.client if invoice.project else None
+        company_or_client = (client.company_name or client.name) if client else 'Client'
+        safe_name = re.sub(r'[^a-zA-Z0-9_\- ]', '', company_or_client).strip().replace(' ', '_')
+        inv_no = f"INV-{str(invoice.id).zfill(3)}"
+        filename = f"{inv_no}_{safe_name}.pdf"
         disposition_type = 'attachment' if request.query_params.get('download') == '1' else 'inline'
         response['Content-Disposition'] = f'{disposition_type}; filename="{filename}"'
         response['Content-Length'] = len(pdf_bytes)
