@@ -71,7 +71,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       {isOpen && (
         <div
           onClick={toggleSidebar}
-          className="mobile-overlay"
+          className="mobile-overlay no-print"
         />
       )}
     </>
@@ -120,7 +120,7 @@ const Layout = ({ children }) => {
         {user && <PushNotificationSetup />}
 
         {/* Mobile Quick Bottom Navigation with More button */}
-        <nav className="mobile-bottom-nav">
+        <nav className="mobile-bottom-nav no-print">
           <NavLink to="/" className={({ isActive }) => isActive ? "mobile-bottom-nav-item active" : "mobile-bottom-nav-item"} end onClick={() => setMoreOpen(false)}>
             <LayoutDashboard size={20} />
             <span>Dashboard</span>
@@ -150,7 +150,7 @@ const Layout = ({ children }) => {
 
         {/* Mobile More Sheet */}
         {moreOpen && (
-          <div className="mobile-more-overlay" onClick={() => setMoreOpen(false)}>
+          <div className="mobile-more-overlay no-print" onClick={() => setMoreOpen(false)}>
             <div className="mobile-more-sheet" onClick={e => e.stopPropagation()}>
               <div className="mobile-more-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>

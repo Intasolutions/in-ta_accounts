@@ -485,7 +485,7 @@ tbody tr:last-child td {
   display: none;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .mobile-bottom-nav {
     display: flex;
     position: fixed;
@@ -1450,8 +1450,26 @@ input:checked + .toggle-slider:before {
   }
 
   /* Hide UI elements cleanly */
-  .sidebar, .page-header, .layout-header, .no-print {
+  .sidebar, 
+  .page-header, 
+  .layout-header, 
+  .no-print,
+  .mobile-bottom-nav,
+  .mobile-bottom-nav-item,
+  .mobile-more-overlay,
+  .mobile-more-sheet,
+  .mobile-overlay,
+  .mobile-header-brand,
+  .action-bar,
+  nav {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
   }
 
   /* Reset the print area so it flows naturally */
